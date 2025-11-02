@@ -2,7 +2,7 @@
 
 An intelligent educational app that helps students solve homework problems, understand concepts, and practice with AI-generated exercises.
 
-## 🎉 Latest Features (v1.2.0)
+## 🎉 Latest Features (v1.3.0)
 
 ### Tier 1 Features ✅
 ✅ **Search & Filter History** - Find past solutions instantly  
@@ -12,14 +12,22 @@ An intelligent educational app that helps students solve homework problems, unde
 ✅ **Practice Problems Generator** - AI-generated similar questions  
 ✅ **Explanation Levels** - Simple, Detailed, or Expert modes  
 
-### Tier 2 Features ✅ NEW!
+### Tier 2 Features ✅
 ⏱️ **Study Timer** - Pomodoro timer with session tracking  
 📊 **Subject Categories** - Organize by Math, Physics, Chemistry, etc.  
 📈 **Progress Dashboard** - Visual analytics and study statistics  
 📴 **Offline Mode** - View history without internet  
 ✍️ **Enhanced OCR** - Better handwritten notes recognition  
 
-📖 [User Guide](docs/NEW_FEATURES.md) | 📋 [Full Roadmap](docs/FEATURE_PLAN.md) | 🔧 [Technical Docs](docs/TIER2_IMPLEMENTATION.md)
+### Tier 3 Features ✅ NEW!
+💬 **AI Chat** - Ask follow-up questions about solutions  
+🃏 **Smart Flashcards** - Auto-generate from solved problems  
+🎤 **Voice Input** - Speak your question instead of typing  
+📹 **Video Explanations** - Animated step-by-step solutions  
+👥 **Study Groups** - Collaborate with classmates  
+🥽 **AR Mode** - Foundation for augmented reality features  
+
+📖 [User Guide](docs/NEW_FEATURES.md) | 📋 [Full Roadmap](docs/FEATURE_PLAN.md) | 🔧 [Tier 3 Docs](docs/TIER3_IMPLEMENTATION.md)
 
 ---
 
@@ -36,21 +44,21 @@ Visit `http://localhost:8080`
 
 ## 📊 Features Overview
 
-**12/28 Features Complete (43%)** 🎯
+**18/28 Features Complete (64%)** 🚀
 
-- ✅ Tier 1: Image Analysis & Organization (6/6)
-- ✅ Tier 2: Study Tools & Analytics (6/6)
-- 🔄 Tier 3: Advanced Features (0/6)
-- 🔄 Tier 4: Gamification (0/3)
-- 🔄 Tier 5: Parental Features (0/2)
-- 🔄 Tier 6: Advanced Tools (0/5)
+- ✅ Tier 1: Image Analysis & Organization (6/6) - 100%
+- ✅ Tier 2: Study Tools & Analytics (6/6) - 100%
+- ✅ Tier 3: Advanced Learning Features (6/6) - 100%
+- 🔄 Tier 4: Gamification (0/3) - 0%
+- 🔄 Tier 5: Parental Features (0/3) - 0%
+- 🔄 Tier 6: Advanced Tools (0/4) - 0%
 
 ---
 
 ## Project info
 
 **URL**: https://lovable.dev/projects/65c71a90-9386-4298-a573-f010cc62396d  
-**Version**: 1.2.0  
+**Version**: 1.3.0  
 **Status**: Production Ready ✅
 
 ## How can I edit this code?

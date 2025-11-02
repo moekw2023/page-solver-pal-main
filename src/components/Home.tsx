@@ -2,15 +2,27 @@ import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { storage } from '@/lib/storage';
-import { Camera, Upload, History, Settings, Sparkles, TrendingUp, Clock } from 'lucide-react';
+import { Camera, Upload, History, Settings, Sparkles, TrendingUp, Clock, CreditCard, Users } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { StudyTimer } from './StudyTimer';
+import { VoiceInput } from './VoiceInput';
+import { useState } from 'react';
+import { toast } from 'sonner';
 
 export const Home = () => {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const profile = storage.getProfile();
   const isRTL = i18n.language === 'ar';
+  const [showVoiceInput, setShowVoiceInput] = useState(false);
+
+  const handleVoiceTranscript = (text: string) => {
+    // Store the voice transcript for processing
+    sessionStorage.setItem('voiceQuery', text);
+    toast.success(isRTL ? 'تم تحويل الصوت، جاري المعالجة...' : 'Voice converted, processing...');
+    // Navigate to upload page which can handle voice queries
+    navigate('/upload');
+  };
 
   return (
     <div className="min-h-screen p-4 md:p-6" dir={isRTL ? 'rtl' : 'ltr'}>
@@ -57,11 +69,27 @@ export const Home = () => {
           </Card>
         </div>
 
+        {/* Voice Input Section */}
+        <div>
+          <Button
+            onClick={() => setShowVoiceInput(!showVoiceInput)}
+            variant={showVoiceInput ? "default" : "outline"}
+            className="w-full mb-4"
+            size="lg"
+          >
+            {showVoiceInput 
+              ? (isRTL ? 'إخفاء الإدخال الصوتي' : 'Hide Voice Input')
+              : (isRTL ? 'استخدم صوتك لطرح سؤال' : 'Use Voice to Ask a Question')
+            }
+          </Button>
+          {showVoiceInput && <VoiceInput onTranscript={handleVoiceTranscript} />}
+        </div>
+
         {/* Study Timer */}
         <StudyTimer />
 
         {/* Secondary Actions */}
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4">
           <Button
             onClick={() => navigate('/dashboard')}
             variant="outline"
@@ -88,6 +116,24 @@ export const Home = () => {
           >
             <Settings className="w-6 h-6 mr-2" />
             {t('settings')}
+          </Button>
+          <Button
+            onClick={() => navigate('/flashcards')}
+            variant="outline"
+            size="lg"
+            className="h-20 text-lg font-semibold border-2 hover:border-purple-500 hover:bg-purple-500/10"
+          >
+            <CreditCard className="w-6 h-6 mr-2" />
+            {isRTL ? 'البطاقات' : 'Flashcards'}
+          </Button>
+          <Button
+            onClick={() => navigate('/study-groups')}
+            variant="outline"
+            size="lg"
+            className="h-20 text-lg font-semibold border-2 hover:border-blue-500 hover:bg-blue-500/10"
+          >
+            <Users className="w-6 h-6 mr-2" />
+            {isRTL ? 'المجموعات' : 'Groups'}
           </Button>
         </div>
       </div>

@@ -8,6 +8,8 @@ import { ArrowLeft, Volume2, VolumeX, Share2, Bookmark, Sparkles, Download, Ligh
 import { storage } from '@/lib/storage';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
+import { AIChat } from './AIChat';
+import { VideoExplanation } from './VideoExplanation';
 
 interface Question {
   question: string;
@@ -38,6 +40,7 @@ export const Results = () => {
   const [showPractice, setShowPractice] = useState(false);
   const [practiceProblems, setPracticeProblems] = useState<Question[]>([]);
   const [isGeneratingPractice, setIsGeneratingPractice] = useState(false);
+  const [showVideoExplanation, setShowVideoExplanation] = useState(false);
 
   useEffect(() => {
     if (!result || !imageUrl) {
@@ -452,6 +455,41 @@ export const Results = () => {
               ))}
             </div>
           </Card>
+        )}
+
+        {/* Video Explanation Section */}
+        {result.hasQuestions && result.questions && result.questions.length > 0 && result.questions[0].steps && (
+          <div className="mb-6">
+            <Button
+              onClick={() => setShowVideoExplanation(!showVideoExplanation)}
+              variant="outline"
+              className="mb-4"
+            >
+              {showVideoExplanation 
+                ? (i18n.language === 'ar' ? 'إخفاء الشرح المرئي' : 'Hide Video Explanation')
+                : (i18n.language === 'ar' ? 'عرض الشرح المرئي' : 'Show Video Explanation')
+              }
+            </Button>
+            
+            {showVideoExplanation && (
+              <VideoExplanation
+                steps={result.questions[0].steps}
+                title={i18n.language === 'ar' ? 'شرح الحل خطوة بخطوة' : 'Step-by-Step Solution'}
+              />
+            )}
+          </div>
+        )}
+
+        {/* AI Chat Integration */}
+        {result.hasQuestions && result.questions && result.questions.length > 0 && (
+          <AIChat
+            problemContext={{
+              question: result.questions[0].question,
+              answer: result.questions[0].answer,
+              steps: result.questions[0].steps
+            }}
+            imageUrl={imageUrl}
+          />
         )}
       </div>
     </div>

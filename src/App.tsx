@@ -11,6 +11,8 @@ import { History } from "./components/History";
 import { Settings } from "./components/Settings";
 import { Results } from "./components/Results";
 import { Dashboard } from "./components/Dashboard";
+import { Flashcards } from "./components/Flashcards";
+import { StudyGroups } from "./components/StudyGroups";
 
 const queryClient = new QueryClient();
 
@@ -28,6 +30,8 @@ const App = () => (
           <Route path="/history" element={<History />} />
           <Route path="/settings" element={<Settings />} />
           <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/flashcards" element={<Flashcards />} />
+          <Route path="/study-groups" element={<StudyGroups />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
