@@ -1,9 +1,10 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { ArrowLeft, User, Globe, Info } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
+import { ArrowLeft, User, Globe, Info, Moon, Sun, Trash2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { storage } from '@/lib/storage';
 import { toast } from 'sonner';
@@ -17,13 +18,31 @@ export const Settings = () => {
   const [name, setName] = useState(profile?.name || '');
   const [grade, setGrade] = useState(profile?.grade || 1);
   const [language, setLanguage] = useState(i18n.language);
+  const [theme, setTheme] = useState<'light' | 'dark'>(storage.getTheme());
+
+  useEffect(() => {
+    // Apply theme to document
+    if (theme === 'dark') {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  }, [theme]);
 
   const handleSave = () => {
     storage.saveProfile({ name, grade });
     storage.saveLanguage(language);
+    storage.saveTheme(theme);
     i18n.changeLanguage(language);
     toast.success(t('success'));
     navigate('/');
+  };
+
+  const handleClearHistory = () => {
+    if (window.confirm(i18n.language === 'ar' ? 'هل أنت متأكد من حذف جميع السجلات؟' : 'Are you sure you want to clear all history?')) {
+      storage.clearHistory();
+      toast.success(i18n.language === 'ar' ? 'تم مسح السجل' : 'History cleared');
+    }
   };
 
   const grades = Array.from({ length: 12 }, (_, i) => i + 1);
@@ -115,6 +134,57 @@ export const Settings = () => {
               English
             </button>
           </div>
+        </Card>
+
+        {/* Appearance Section */}
+        <Card className="p-6 space-y-4">
+          <div className="flex items-center gap-3 pb-4 border-b">
+            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-purple-600 flex items-center justify-center">
+              {theme === 'dark' ? <Moon className="w-5 h-5 text-white" /> : <Sun className="w-5 h-5 text-white" />}
+            </div>
+            <h2 className="text-xl font-bold">
+              {i18n.language === 'ar' ? 'المظهر' : 'Appearance'}
+            </h2>
+          </div>
+
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              {theme === 'dark' ? <Moon className="w-5 h-5" /> : <Sun className="w-5 h-5" />}
+              <div>
+                <p className="font-semibold">
+                  {i18n.language === 'ar' ? 'الوضع الداكن' : 'Dark Mode'}
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  {i18n.language === 'ar' ? 'حماية العينين في الليل' : 'Easier on the eyes at night'}
+                </p>
+              </div>
+            </div>
+            <Switch
+              checked={theme === 'dark'}
+              onCheckedChange={(checked) => setTheme(checked ? 'dark' : 'light')}
+            />
+          </div>
+        </Card>
+
+        {/* Data Management Section */}
+        <Card className="p-6 space-y-4">
+          <div className="flex items-center gap-3 pb-4 border-b">
+            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-red-500 to-red-600 flex items-center justify-center">
+              <Trash2 className="w-5 h-5 text-white" />
+            </div>
+            <h2 className="text-xl font-bold">
+              {i18n.language === 'ar' ? 'إدارة البيانات' : 'Data Management'}
+            </h2>
+          </div>
+
+          <Button
+            onClick={handleClearHistory}
+            variant="destructive"
+            className="w-full"
+          >
+            <Trash2 className="w-4 h-4 mr-2" />
+            {i18n.language === 'ar' ? 'مسح جميع السجلات' : 'Clear All History'}
+          </Button>
         </Card>
 
         {/* About Section */}

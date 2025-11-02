@@ -3,9 +3,11 @@ import { useTranslation } from 'react-i18next';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { ArrowLeft, Volume2, VolumeX, Share2, Bookmark, Sparkles } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { ArrowLeft, Volume2, VolumeX, Share2, Bookmark, Sparkles, Download, Lightbulb, Loader2, Copy } from 'lucide-react';
 import { storage } from '@/lib/storage';
 import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
 
 interface Question {
   question: string;
@@ -32,6 +34,10 @@ export const Results = () => {
   const [imageUrl] = useState<string>(historyItem?.imageUrl || location.state?.imageUrl);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [isFromHistory] = useState<boolean>(!!historyItem);
+  const [explanationLevel, setExplanationLevel] = useState<'simple' | 'detailed' | 'expert'>('detailed');
+  const [showPractice, setShowPractice] = useState(false);
+  const [practiceProblems, setPracticeProblems] = useState<Question[]>([]);
+  const [isGeneratingPractice, setIsGeneratingPractice] = useState(false);
 
   useEffect(() => {
     if (!result || !imageUrl) {
@@ -92,6 +98,103 @@ export const Results = () => {
     }
   };
 
+  const handleCopyAll = async () => {
+    let text = '';
+    if (result.hasQuestions && result.questions) {
+      text = result.questions.map((q, idx) => {
+        let content = `Question ${idx + 1}: ${q.question}\n\n`;
+        if (q.steps && q.steps.length > 0) {
+          content += 'Steps:\n' + q.steps.map((s, i) => `${i + 1}. ${s}`).join('\n') + '\n\n';
+        }
+        content += `Answer: ${q.answer}\n`;
+        return content;
+      }).join('\n---\n\n');
+    } else {
+      text = result.summary || '';
+    }
+    
+    await navigator.clipboard.writeText(text);
+    toast.success(i18n.language === 'ar' ? 'تم النسخ' : 'Copied to clipboard');
+  };
+
+  const handleExportPDF = async () => {
+    try {
+      // Create a formatted text version
+      let content = `${result.hasQuestions ? 'Solutions' : 'Summary'}\n${'='.repeat(50)}\n\n`;
+      
+      if (result.hasQuestions && result.questions) {
+        result.questions.forEach((q, idx) => {
+          content += `Question ${idx + 1}:\n${q.question}\n\n`;
+          if (q.steps && q.steps.length > 0) {
+            content += 'Steps:\n';
+            q.steps.forEach((s, i) => {
+              content += `  ${i + 1}. ${s}\n`;
+            });
+            content += '\n';
+          }
+          content += `Answer:\n${q.answer}\n\n${'='.repeat(50)}\n\n`;
+        });
+      } else {
+        content += result.summary + '\n';
+      }
+
+      // Create and download as text file (PDF generation would require additional library)
+      const blob = new Blob([content], { type: 'text/plain' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `solution-${Date.now()}.txt`;
+      a.click();
+      URL.revokeObjectURL(url);
+      
+      toast.success(i18n.language === 'ar' ? 'تم التصدير' : 'Exported successfully');
+    } catch (error) {
+      console.error('Export error:', error);
+      toast.error(t('errorOccurred'));
+    }
+  };
+
+  const handleGeneratePractice = async () => {
+    if (!result.questions || result.questions.length === 0) {
+      toast.error(i18n.language === 'ar' ? 'لا توجد أسئلة لتوليد تمارين' : 'No questions to generate practice from');
+      return;
+    }
+
+    setIsGeneratingPractice(true);
+    const profile = storage.getProfile();
+
+    try {
+      const { data, error } = await supabase.functions.invoke('analyze-image', {
+        body: {
+          imageBase64: imageUrl,
+          language: i18n.language,
+          grade: profile?.grade || 1,
+          generatePractice: true,
+          originalQuestions: result.questions
+        }
+      });
+
+      if (error) throw error;
+
+      setPracticeProblems(data.questions || []);
+      setShowPractice(true);
+      toast.success(i18n.language === 'ar' ? 'تم توليد التمارين' : 'Practice problems generated');
+    } catch (error) {
+      console.error('Practice generation error:', error);
+      // Generate some sample practice problems as fallback
+      const sampleProblems: Question[] = result.questions.slice(0, 3).map((q, idx) => ({
+        question: `${i18n.language === 'ar' ? 'تمرين' : 'Practice'} ${idx + 1}: ${q.question}`,
+        answer: i18n.language === 'ar' ? 'حاول حل هذا التمرين بنفسك' : 'Try to solve this on your own',
+        steps: []
+      }));
+      setPracticeProblems(sampleProblems);
+      setShowPractice(true);
+      toast.info(i18n.language === 'ar' ? 'تمارين تجريبية' : 'Sample practice problems');
+    } finally {
+      setIsGeneratingPractice(false);
+    }
+  };
+
   if (!result) return null;
 
   return (
@@ -116,6 +219,24 @@ export const Results = () => {
           
           <div className="flex gap-2">
             <Button
+              onClick={handleCopyAll}
+              variant="outline"
+              size="icon"
+              className="rounded-full"
+              title={i18n.language === 'ar' ? 'نسخ الكل' : 'Copy All'}
+            >
+              <Copy className="w-5 h-5" />
+            </Button>
+            <Button
+              onClick={handleExportPDF}
+              variant="outline"
+              size="icon"
+              className="rounded-full"
+              title={i18n.language === 'ar' ? 'تصدير' : 'Export'}
+            >
+              <Download className="w-5 h-5" />
+            </Button>
+            <Button
               onClick={handleShare}
               variant="outline"
               size="icon"
@@ -133,6 +254,41 @@ export const Results = () => {
             </Button>
           </div>
         </div>
+
+        {/* Explanation Level Selector */}
+        {result.hasQuestions && (
+          <Card className="p-4">
+            <div className="flex items-center justify-between gap-4">
+              <div className="flex items-center gap-2">
+                <Lightbulb className="w-5 h-5 text-primary" />
+                <span className="font-semibold">
+                  {i18n.language === 'ar' ? 'مستوى الشرح:' : 'Explanation Level:'}
+                </span>
+              </div>
+              <Select value={explanationLevel} onValueChange={(value: any) => setExplanationLevel(value)}>
+                <SelectTrigger className="w-[180px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="simple">
+                    {i18n.language === 'ar' ? '🟢 بسيط' : '🟢 Simple'}
+                  </SelectItem>
+                  <SelectItem value="detailed">
+                    {i18n.language === 'ar' ? '🟡 مفصل' : '🟡 Detailed'}
+                  </SelectItem>
+                  <SelectItem value="expert">
+                    {i18n.language === 'ar' ? '🔴 خبير' : '🔴 Expert'}
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <p className="text-sm text-muted-foreground mt-2">
+              {explanationLevel === 'simple' && (i18n.language === 'ar' ? 'شرح مبسط للمبتدئين' : 'Simplified for beginners')}
+              {explanationLevel === 'detailed' && (i18n.language === 'ar' ? 'شرح مفصل مع الخطوات' : 'Detailed with steps')}
+              {explanationLevel === 'expert' && (i18n.language === 'ar' ? 'شرح متقدم للخبراء' : 'Advanced for experts')}
+            </p>
+          </Card>
+        )}
 
         {/* Image Preview */}
         <Card className="p-4">
@@ -230,6 +386,73 @@ export const Results = () => {
         >
           {t('tryAnother')}
         </Button>
+
+        {/* Practice Problems Button */}
+        {result.hasQuestions && !showPractice && (
+          <Button
+            onClick={handleGeneratePractice}
+            disabled={isGeneratingPractice}
+            className="w-full h-14 text-lg font-semibold bg-gradient-to-r from-purple-500 to-pink-500"
+            size="lg"
+          >
+            {isGeneratingPractice ? (
+              <>
+                <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                {i18n.language === 'ar' ? 'جاري التوليد...' : 'Generating...'}
+              </>
+            ) : (
+              <>
+                <Lightbulb className="w-5 h-5 mr-2" />
+                {i18n.language === 'ar' ? 'توليد تمارين للممارسة' : 'Generate Practice Problems'}
+              </>
+            )}
+          </Button>
+        )}
+
+        {/* Practice Problems Section */}
+        {showPractice && practiceProblems.length > 0 && (
+          <Card className="p-6 bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-950 dark:to-pink-950 border-2 border-purple-200 dark:border-purple-800">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-2xl font-bold flex items-center gap-2">
+                <Lightbulb className="w-6 h-6 text-purple-600" />
+                {i18n.language === 'ar' ? 'تمارين للممارسة' : 'Practice Problems'}
+              </h2>
+              <Button
+                onClick={() => setShowPractice(false)}
+                variant="outline"
+                size="sm"
+              >
+                {i18n.language === 'ar' ? 'إخفاء' : 'Hide'}
+              </Button>
+            </div>
+            <div className="space-y-4">
+              {practiceProblems.map((problem, idx) => (
+                <Card key={idx} className="p-4 bg-white dark:bg-gray-800">
+                  <p className="font-semibold text-lg mb-2">{problem.question}</p>
+                  <details className="text-sm text-muted-foreground">
+                    <summary className="cursor-pointer hover:text-foreground font-semibold">
+                      {i18n.language === 'ar' ? '👁️ إظهار الحل' : '👁️ Show Solution'}
+                    </summary>
+                    <div className="mt-2 p-3 bg-green-50 dark:bg-green-950 rounded-lg">
+                      {problem.steps && problem.steps.length > 0 && (
+                        <div className="mb-2">
+                          {problem.steps.map((step, stepIdx) => (
+                            <p key={stepIdx} className="mb-1">
+                              {stepIdx + 1}. {step}
+                            </p>
+                          ))}
+                        </div>
+                      )}
+                      <p className="font-semibold text-green-700 dark:text-green-300">
+                        {i18n.language === 'ar' ? 'الإجابة:' : 'Answer:'} {problem.answer}
+                      </p>
+                    </div>
+                  </details>
+                </Card>
+              ))}
+            </div>
+          </Card>
+        )}
       </div>
     </div>
   );

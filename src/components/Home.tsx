@@ -2,8 +2,9 @@ import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { storage } from '@/lib/storage';
-import { Camera, Upload, History, Settings, Sparkles } from 'lucide-react';
+import { Camera, Upload, History, Settings, Sparkles, TrendingUp, Clock } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { StudyTimer } from './StudyTimer';
 
 export const Home = () => {
   const { t, i18n } = useTranslation();
@@ -56,8 +57,20 @@ export const Home = () => {
           </Card>
         </div>
 
+        {/* Study Timer */}
+        <StudyTimer />
+
         {/* Secondary Actions */}
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-3 gap-4">
+          <Button
+            onClick={() => navigate('/dashboard')}
+            variant="outline"
+            size="lg"
+            className="h-20 text-lg font-semibold border-2 hover:border-primary hover:bg-primary/10"
+          >
+            <TrendingUp className="w-6 h-6 mr-2" />
+            {i18n.language === 'ar' ? 'التقدم' : 'Progress'}
+          </Button>
           <Button
             onClick={() => navigate('/history')}
             variant="outline"
