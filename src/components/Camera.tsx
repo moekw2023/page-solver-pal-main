@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -16,23 +16,68 @@ export const Camera = () => {
   const [stream, setStream] = useState<MediaStream | null>(null);
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [isLoadingCamera, setIsLoadingCamera] = useState(false);
+  const [cameraError, setCameraError] = useState<string | null>(null);
   const [facingMode, setFacingMode] = useState<'user' | 'environment'>('environment');
   const isRTL = i18n.language === 'ar';
 
   const startCamera = async () => {
+    setIsLoadingCamera(true);
+    setCameraError(null);
+    
     try {
-      const mediaStream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode },
+      // Check if getUserMedia is supported
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        throw new Error('Camera not supported on this device');
+      }
+
+      const constraints = {
+        video: { 
+          facingMode: facingMode,
+          width: { ideal: 1920 },
+          height: { ideal: 1080 }
+        },
         audio: false,
-      });
+      };
+
+      const mediaStream = await navigator.mediaDevices.getUserMedia(constraints);
       
       if (videoRef.current) {
         videoRef.current.srcObject = mediaStream;
+        // Wait for video to be ready
+        await new Promise<void>((resolve) => {
+          if (videoRef.current) {
+            videoRef.current.onloadedmetadata = () => {
+              videoRef.current?.play();
+              resolve();
+            };
+          }
+        });
         setStream(mediaStream);
+        toast.success(i18n.language === 'ar' ? 'تم تشغيل الكاميرا' : 'Camera started');
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Camera error:', error);
-      toast.error(t('errorOccurred'));
+      let errorMessage = t('errorOccurred');
+      
+      if (error.name === 'NotAllowedError' || error.name === 'PermissionDeniedError') {
+        errorMessage = i18n.language === 'ar' 
+          ? 'يرجى السماح بالوصول إلى الكاميرا في إعدادات المتصفح'
+          : 'Please allow camera access in your browser settings';
+      } else if (error.name === 'NotFoundError' || error.name === 'DevicesNotFoundError') {
+        errorMessage = i18n.language === 'ar'
+          ? 'لم يتم العثور على كاميرا'
+          : 'No camera found on this device';
+      } else if (error.name === 'NotReadableError' || error.name === 'TrackStartError') {
+        errorMessage = i18n.language === 'ar'
+          ? 'الكاميرا قيد الاستخدام من تطبيق آخر'
+          : 'Camera is being used by another application';
+      }
+      
+      setCameraError(errorMessage);
+      toast.error(errorMessage);
+    } finally {
+      setIsLoadingCamera(false);
     }
   };
 
@@ -60,10 +105,12 @@ export const Camera = () => {
     }
   };
 
-  const switchCamera = () => {
+  const switchCamera = async () => {
     stopCamera();
     setFacingMode(prev => prev === 'user' ? 'environment' : 'user');
-    setTimeout(startCamera, 100);
+    // Small delay to ensure camera is fully released
+    await new Promise(resolve => setTimeout(resolve, 300));
+    await startCamera();
   };
 
   const handleAnalyze = async () => {
@@ -98,6 +145,13 @@ export const Camera = () => {
     }
   };
 
+  // Cleanup camera stream on component unmount
+  useEffect(() => {
+    return () => {
+      stopCamera();
+    };
+  }, []);
+
   return (
     <div className="min-h-screen p-4 md:p-6" dir={isRTL ? 'rtl' : 'ltr'}>
       <div className="max-w-2xl mx-auto space-y-6">
@@ -122,12 +176,25 @@ export const Camera = () => {
           {!stream && !capturedImage && (
             <div className="text-center py-12">
               <CameraIcon className="w-16 h-16 mx-auto text-primary mb-4" />
+              {cameraError && (
+                <div className="mb-4 p-3 bg-destructive/10 text-destructive rounded-lg text-sm">
+                  {cameraError}
+                </div>
+              )}
               <Button
                 onClick={startCamera}
                 className="bg-gradient-to-r from-primary to-primary-light"
                 size="lg"
+                disabled={isLoadingCamera}
               >
-                {t('camera')}
+                {isLoadingCamera ? (
+                  <>
+                    <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                    {i18n.language === 'ar' ? 'جاري التحميل...' : 'Loading...'}
+                  </>
+                ) : (
+                  t('camera')
+                )}
               </Button>
             </div>
           )}
