@@ -9,12 +9,18 @@ export interface HistoryItem {
   timestamp: number;
   hasQuestions: boolean;
   result: {
+    hasQuestions: boolean;
     questions?: Array<{
       question: string;
       answer: string;
       steps?: string[];
     }>;
     summary?: string;
+    suggestedQuestions?: Array<{
+      question: string;
+      answer: string;
+      steps?: string[];
+    }>;
   };
 }
 

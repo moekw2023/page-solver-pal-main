@@ -26,9 +26,12 @@ export const Results = () => {
   const location = useLocation();
   const isRTL = i18n.language === 'ar';
   
-  const [result] = useState<AIResult>(location.state?.result);
-  const [imageUrl] = useState<string>(location.state?.imageUrl);
+  // Check if we're viewing from history or a new result
+  const historyItem = location.state?.historyItem;
+  const [result] = useState<AIResult>(historyItem?.result || location.state?.result);
+  const [imageUrl] = useState<string>(historyItem?.imageUrl || location.state?.imageUrl);
   const [isSpeaking, setIsSpeaking] = useState(false);
+  const [isFromHistory] = useState<boolean>(!!historyItem);
 
   useEffect(() => {
     if (!result || !imageUrl) {
@@ -53,6 +56,11 @@ export const Results = () => {
   };
 
   const handleSave = () => {
+    if (isFromHistory) {
+      toast.info(i18n.language === 'ar' ? 'هذا العنصر محفوظ بالفعل' : 'Already saved in history');
+      return;
+    }
+    
     const historyItem = {
       id: Date.now().toString(),
       imageUrl,
@@ -117,11 +125,11 @@ export const Results = () => {
             </Button>
             <Button
               onClick={handleSave}
-              variant="outline"
+              variant={isFromHistory ? "default" : "outline"}
               size="icon"
-              className="rounded-full"
+              className={`rounded-full ${isFromHistory ? 'bg-primary text-primary-foreground' : ''}`}
             >
-              <Bookmark className="w-5 h-5" />
+              <Bookmark className={`w-5 h-5 ${isFromHistory ? 'fill-current' : ''}`} />
             </Button>
           </div>
         </div>
