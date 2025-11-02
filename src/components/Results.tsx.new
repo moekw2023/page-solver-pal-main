@@ -1,0 +1,261 @@
+import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
+import {
+  ArrowLeft,
+  Volume2,
+  VolumeX,
+  Share2,
+  Bookmark,
+  Sparkles,
+  CheckCircle2,
+  ListChecks,
+  LightbulbIcon,
+  BookOpen
+} from 'lucide-react';
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
+import { Badge } from "@/components/ui/badge";
+import { storage } from '@/lib/storage';
+import { toast } from 'sonner';
+
+interface Question {
+  question: string;
+  answer: string;
+  steps?: string[];
+}
+
+interface AIResult {
+  hasQuestions: boolean;
+  questions?: Question[];
+  summary?: string;
+  suggestedQuestions?: Question[];
+}
+
+export const Results = () => {
+  const { t, i18n } = useTranslation();
+  const navigate = useNavigate();
+  const location = useLocation();
+  const isRTL = i18n.language === 'ar';
+  
+  const [result] = useState<AIResult>(location.state?.result);
+  const [imageUrl] = useState<string>(location.state?.imageUrl);
+  const [isSpeaking, setIsSpeaking] = useState(false);
+
+  useEffect(() => {
+    if (!result || !imageUrl) {
+      navigate('/');
+    }
+  }, [result, imageUrl, navigate]);
+
+  const handleSpeak = (text: string) => {
+    if (isSpeaking) {
+      window.speechSynthesis.cancel();
+      setIsSpeaking(false);
+      return;
+    }
+
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = i18n.language === 'ar' ? 'ar-SA' : 'en-US';
+    utterance.rate = 0.9;
+    utterance.onend = () => setIsSpeaking(false);
+    
+    window.speechSynthesis.speak(utterance);
+    setIsSpeaking(true);
+  };
+
+  const handleSave = () => {
+    const historyItem = {
+      id: Date.now().toString(),
+      imageUrl,
+      timestamp: Date.now(),
+      hasQuestions: result.hasQuestions,
+      result
+    };
+    storage.saveHistory(historyItem);
+    toast.success(t('success'));
+  };
+
+  const handleShare = async () => {
+    const shareText = result.hasQuestions
+      ? result.questions?.map(q => `${q.question}\n${q.answer}`).join('\n\n')
+      : result.summary;
+
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: t('solution'),
+          text: shareText,
+        });
+      } catch (err) {
+        console.error('Share failed:', err);
+      }
+    } else {
+      await navigator.clipboard.writeText(shareText || '');
+      toast.success(t('success'));
+    }
+  };
+
+  if (!result) return null;
+
+  return (
+    <div className="min-h-screen bg-gradient-to-b from-background to-muted p-4 md:p-6" dir={isRTL ? 'rtl' : 'ltr'}>
+      <div className="max-w-4xl mx-auto space-y-6">
+        {/* Header */}
+        <div className="flex items-center justify-between gap-4 bg-background/60 backdrop-blur-sm rounded-lg p-4">
+          <div className="flex items-center gap-4">
+            <Button
+              onClick={() => navigate('/')}
+              variant="outline"
+              size="icon"
+              className="rounded-full"
+            >
+              <ArrowLeft className="w-5 h-5" />
+            </Button>
+            <h1 className="text-3xl font-bold flex items-center gap-2">
+              <Sparkles className="w-8 h-8 text-primary" />
+              {result.hasQuestions ? t('solution') : t('summary')}
+            </h1>
+          </div>
+          
+          <div className="flex gap-2">
+            <Button
+              onClick={() => handleSpeak(result.hasQuestions 
+                ? result.questions?.map(q => `${q.question}. ${q.answer}`).join('. ') || ''
+                : result.summary || ''
+              )}
+              variant="outline"
+              size="icon"
+              className="rounded-full"
+            >
+              {isSpeaking ? <VolumeX className="w-5 h-5" /> : <Volume2 className="w-5 h-5" />}
+            </Button>
+            <Button
+              onClick={handleShare}
+              variant="outline"
+              size="icon"
+              className="rounded-full"
+            >
+              <Share2 className="w-5 h-5" />
+            </Button>
+            <Button
+              onClick={handleSave}
+              variant="outline"
+              size="icon"
+              className="rounded-full"
+            >
+              <Bookmark className="w-5 h-5" />
+            </Button>
+          </div>
+        </div>
+
+        {/* Image with floating badge */}
+        <div className="relative">
+          <Card className="overflow-hidden shadow-lg">
+            <img src={imageUrl} alt="Question" className="w-full h-auto" />
+          </Card>
+          <Badge className="absolute top-4 right-4 bg-primary/90 backdrop-blur-sm">
+            {result.hasQuestions ? t('questions') : t('summary')}
+          </Badge>
+        </div>
+
+        {/* Results with modern styling */}
+        <Card className="p-6 space-y-6 backdrop-blur-sm bg-background/60">
+          {result.hasQuestions ? (
+            <Accordion type="single" collapsible className="space-y-4">
+              {result.questions?.map((q, i) => (
+                <AccordionItem key={i} value={`question-${i}`} className="bg-card p-4 rounded-lg border">
+                  <AccordionTrigger className="hover:no-underline">
+                    <div className="flex items-start gap-3">
+                      <BookOpen className="w-5 h-5 text-primary mt-1" />
+                      <h3 className="text-xl font-semibold text-start">{q.question}</h3>
+                    </div>
+                  </AccordionTrigger>
+                  <AccordionContent className="pt-4">
+                    <div className="space-y-4">
+                      <div className="flex gap-3">
+                        <CheckCircle2 className="w-5 h-5 text-primary mt-1" />
+                        <p className="text-muted-foreground whitespace-pre-wrap">{q.answer}</p>
+                      </div>
+                      {q.steps && (
+                        <div className="ml-8 mt-4">
+                          <div className="flex items-center gap-2 mb-3">
+                            <ListChecks className="w-5 h-5 text-primary" />
+                            <h4 className="font-medium">{t('steps')}</h4>
+                          </div>
+                          <ul className="space-y-3 text-muted-foreground">
+                            {q.steps.map((step, j) => (
+                              <li key={j} className="flex items-start gap-2">
+                                <Badge variant="outline" className="mt-1">{j + 1}</Badge>
+                                <span>{step}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                    </div>
+                  </AccordionContent>
+                </AccordionItem>
+              ))}
+            </Accordion>
+          ) : (
+            <div className="space-y-8">
+              <div className="bg-card p-6 rounded-lg border">
+                <div className="flex items-start gap-3 mb-4">
+                  <Sparkles className="w-5 h-5 text-primary mt-1" />
+                  <h3 className="text-xl font-semibold">{t('summary')}</h3>
+                </div>
+                <p className="text-lg leading-relaxed whitespace-pre-wrap ml-8">{result.summary}</p>
+              </div>
+
+              {result.suggestedQuestions && result.suggestedQuestions.length > 0 && (
+                <div className="bg-card p-6 rounded-lg border">
+                  <div className="flex items-start gap-3 mb-4">
+                    <LightbulbIcon className="w-5 h-5 text-primary mt-1" />
+                    <h3 className="text-xl font-semibold">{t('suggestedQuestions')}</h3>
+                  </div>
+                  <Accordion type="single" collapsible className="ml-8">
+                    {result.suggestedQuestions.map((q, i) => (
+                      <AccordionItem key={i} value={`suggested-${i}`}>
+                        <AccordionTrigger className="text-left font-medium">
+                          {q.question}
+                        </AccordionTrigger>
+                        <AccordionContent>
+                          <p className="text-muted-foreground">{q.answer}</p>
+                        </AccordionContent>
+                      </AccordionItem>
+                    ))}
+                  </Accordion>
+                </div>
+              )}
+            </div>
+          )}
+        </Card>
+
+        {/* Action Buttons */}
+        <div className="flex gap-4">
+          <Button
+            onClick={() => navigate('/camera')}
+            className="flex-1 h-12 text-lg font-semibold bg-gradient-to-r from-primary to-primary-light"
+            size="lg"
+          >
+            {t('takePhoto')}
+          </Button>
+          <Button
+            onClick={() => navigate('/upload')}
+            className="flex-1 h-12 text-lg font-semibold bg-gradient-to-r from-secondary to-secondary-light"
+            size="lg"
+          >
+            {t('uploadImage')}
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+};
