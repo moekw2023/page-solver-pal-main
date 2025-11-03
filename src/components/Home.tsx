@@ -2,7 +2,7 @@ import { useTranslation } from 'react-i18next';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { storage } from '@/lib/storage';
-import { Camera, Upload, History, Settings, Sparkles, TrendingUp, Clock, CreditCard, Users } from 'lucide-react';
+import { Camera, Upload, History, Settings, Sparkles, TrendingUp, Clock, CreditCard, Users, Trophy, Target, Bot } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { StudyTimer } from './StudyTimer';
 import { VoiceInput } from './VoiceInput';
@@ -134,6 +134,37 @@ export const Home = () => {
           >
             <Users className="w-6 h-6 mr-2" />
             {isRTL ? 'المجموعات' : 'Groups'}
+          </Button>
+        </div>
+
+        {/* Tier 4: Gamification */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+          <Button
+            onClick={() => navigate('/achievements')}
+            variant="outline"
+            size="lg"
+            className="h-20 text-lg font-semibold border-2 hover:border-yellow-500 hover:bg-yellow-500/10"
+          >
+            <Trophy className="w-6 h-6 mr-2" />
+            {isRTL ? 'الإنجازات' : 'Achievements'}
+          </Button>
+          <Button
+            onClick={() => navigate('/daily-challenge')}
+            variant="outline"
+            size="lg"
+            className="h-20 text-lg font-semibold border-2 hover:border-orange-500 hover:bg-orange-500/10"
+          >
+            <Target className="w-6 h-6 mr-2" />
+            {isRTL ? 'التحدي اليومي' : 'Daily Challenge'}
+          </Button>
+          <Button
+            onClick={() => navigate('/study-buddy')}
+            variant="outline"
+            size="lg"
+            className="h-20 text-lg font-semibold border-2 hover:border-indigo-500 hover:bg-indigo-500/10"
+          >
+            <Bot className="w-6 h-6 mr-2" />
+            {isRTL ? 'صديق الدراسة' : 'Study Buddy'}
           </Button>
         </div>
       </div>

@@ -13,6 +13,9 @@ import { Results } from "./components/Results";
 import { Dashboard } from "./components/Dashboard";
 import { Flashcards } from "./components/Flashcards";
 import { StudyGroups } from "./components/StudyGroups";
+import { Achievements } from "./components/Achievements";
+import { DailyChallenge } from "./components/DailyChallenge";
+import { StudyBuddyAI } from "./components/StudyBuddyAI";
 
 const queryClient = new QueryClient();
 
@@ -32,6 +35,9 @@ const App = () => (
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/flashcards" element={<Flashcards />} />
           <Route path="/study-groups" element={<StudyGroups />} />
+          <Route path="/achievements" element={<Achievements />} />
+          <Route path="/daily-challenge" element={<DailyChallenge />} />
+          <Route path="/study-buddy" element={<StudyBuddyAI />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
