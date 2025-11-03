@@ -1,28 +1,37 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using StudentHelper.Infrastructure.Data;
+using StudentHelper.Infrastructure.Services;
 
 namespace StudentHelper.Web.Controllers;
 
 public class HistoryController : Controller
 {
     private readonly ApplicationDbContext _context;
+    private readonly IUserService _userService;
 
-    public HistoryController(ApplicationDbContext context)
+    public HistoryController(ApplicationDbContext context, IUserService userService)
     {
         _context = context;
-    }
-
-    public async Task<IActionResult> Index(int page = 1, int pageSize = 20)
+        _userService = userService;
+    }    public async Task<IActionResult> Index(int page = 1, int pageSize = 20)
     {
-        var userId = HttpContext.Session.GetInt32("UserId") ?? 1;
+        var userId = HttpContext.Session.GetInt32("UserId");
+        if (userId == null)
+        {
+            var user = await _userService.GetOrCreateDefaultUserAsync();
+            userId = user.Id;
+            HttpContext.Session.SetInt32("UserId", user.Id);
+        }
+
+        var userIdValue = userId.Value;
         
         var totalItems = await _context.HistoryItems
-            .Where(h => h.UserId == userId)
+            .Where(h => h.UserId == userIdValue)
             .CountAsync();
 
         var items = await _context.HistoryItems
-            .Where(h => h.UserId == userId)
+            .Where(h => h.UserId == userIdValue)
             .OrderByDescending(h => h.CreatedAt)
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
@@ -58,15 +67,21 @@ public class HistoryController : Controller
         await _context.SaveChangesAsync();
 
         return RedirectToAction(nameof(Index));
-    }
-
-    [HttpGet]
+    }    [HttpGet]
     public async Task<IActionResult> Statistics()
     {
-        var userId = HttpContext.Session.GetInt32("UserId") ?? 1;
+        var userId = HttpContext.Session.GetInt32("UserId");
+        if (userId == null)
+        {
+            var user = await _userService.GetOrCreateDefaultUserAsync();
+            userId = user.Id;
+            HttpContext.Session.SetInt32("UserId", user.Id);
+        }
+
+        var userIdValue = userId.Value;
         
         var stats = await _context.HistoryItems
-            .Where(h => h.UserId == userId)
+            .Where(h => h.UserId == userIdValue)
             .GroupBy(h => h.Subject)
             .Select(g => new
             {

@@ -31,6 +31,7 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 // Register application services
 builder.Services.AddHttpClient<IAIService, AIService>();
 builder.Services.AddScoped<IAIService, AIService>();
+builder.Services.AddScoped<IUserService, UserService>();
 
 // Add localization support
 builder.Services.AddLocalization(options => options.ResourcesPath = "Resources");

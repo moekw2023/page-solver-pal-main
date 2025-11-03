@@ -1,7 +1,9 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using StudentHelper.Core.Interfaces;
 using StudentHelper.Core.Models;
 using StudentHelper.Infrastructure.Data;
+using StudentHelper.Infrastructure.Services;
 
 namespace StudentHelper.Web.Controllers;
 
@@ -9,11 +11,13 @@ public class CameraController : Controller
 {
     private readonly IAIService _aiService;
     private readonly ApplicationDbContext _context;
+    private readonly IUserService _userService;
 
-    public CameraController(IAIService aiService, ApplicationDbContext context)
+    public CameraController(IAIService aiService, ApplicationDbContext context, IUserService userService)
     {
         _aiService = aiService;
         _context = context;
+        _userService = userService;
     }
 
     public IActionResult Index()
@@ -30,15 +34,22 @@ public class CameraController : Controller
         }
 
         try
-        {
-            using var stream = image.OpenReadStream();
+        {            using var stream = image.OpenReadStream();
             var result = await _aiService.AnalyzeImageAsync(stream, context);
 
+            // Get or create user
+            var userId = HttpContext.Session.GetInt32("UserId");
+            if (userId == null)
+            {
+                var user = await _userService.GetOrCreateDefaultUserAsync();
+                userId = user.Id;
+                HttpContext.Session.SetInt32("UserId", user.Id);
+            }
+
             // Save to history
-            var userId = HttpContext.Session.GetInt32("UserId") ?? 1; // Default user for now
             var historyItem = new HistoryItem
             {
-                UserId = userId,
+                UserId = userId.Value,
                 Question = context ?? "Image analysis",
                 Answer = result,
                 CreatedAt = DateTime.UtcNow,

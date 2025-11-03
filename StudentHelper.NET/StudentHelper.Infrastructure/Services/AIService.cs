@@ -11,16 +11,14 @@ public class AIService : IAIService
     private readonly string _apiKey;
     private readonly string _apiEndpoint;
     private readonly string _model;
-    private readonly string _visionModel;
-
-    public AIService(HttpClient httpClient, IConfiguration configuration)
+    private readonly string _visionModel;    public AIService(HttpClient httpClient, IConfiguration configuration)
     {
         _httpClient = httpClient;
         _apiKey = configuration["AI:ApiKey"] ?? throw new InvalidOperationException("AI API Key not configured");
-        _apiEndpoint = configuration["AI:Endpoint"] ?? "https://generativelanguage.googleapis.com/v1beta";
-        _model = configuration["AI:Model"] ?? "gemini-1.5-pro";
-        _visionModel = configuration["AI:VisionModel"] ?? "gemini-1.5-pro-vision";
-    }    public async Task<string> AnalyzeImageAsync(Stream imageStream, string? context = null)
+        _apiEndpoint = configuration["AI:Endpoint"] ?? "https://generativelanguage.googleapis.com/v1";
+        _model = configuration["AI:Model"] ?? "gemini-2.5-flash";
+        _visionModel = configuration["AI:VisionModel"] ?? "gemini-2.5-flash";
+    }public async Task<string> AnalyzeImageAsync(Stream imageStream, string? context = null)
     {
         // Convert image to base64
         using var memoryStream = new MemoryStream();
@@ -48,14 +46,21 @@ public class AIService : IAIService
                     }
                 }
             }
-        };
+        };        // Google AI Studio requires API key as URL query parameter, NOT Bearer token
+        var url = $"{_apiEndpoint}/models/{_visionModel}:generateContent?key={_apiKey}";
+        var request = new HttpRequestMessage(HttpMethod.Post, url);
+        request.Content = new StringContent(JsonSerializer.Serialize(requestBody), Encoding.UTF8, "application/json");
 
-        var content = new StringContent(JsonSerializer.Serialize(requestBody), Encoding.UTF8, "application/json");
-
-        var response = await _httpClient.PostAsync($"{_apiEndpoint}/models/{_visionModel}:generateContent?key={_apiKey}", content);
-        response.EnsureSuccessStatusCode();
-
+        var response = await _httpClient.SendAsync(request);
+        
+        // Read response for better error messages
         var responseJson = await response.Content.ReadAsStringAsync();
+        
+        if (!response.IsSuccessStatusCode)
+        {
+            throw new HttpRequestException($"Gemini API error ({response.StatusCode}): {responseJson}");
+        }
+
         var result = JsonSerializer.Deserialize<JsonElement>(responseJson);
         
         // Extract text from Gemini response
@@ -159,14 +164,21 @@ public class AIService : IAIService
                     }
                 }
             }
-        };
+        };        // Google AI Studio requires API key as URL query parameter, NOT Bearer token
+        var url = $"{_apiEndpoint}/models/{_model}:generateContent?key={_apiKey}";
+        var request = new HttpRequestMessage(HttpMethod.Post, url);
+        request.Content = new StringContent(JsonSerializer.Serialize(requestBody), Encoding.UTF8, "application/json");
 
-        var content = new StringContent(JsonSerializer.Serialize(requestBody), Encoding.UTF8, "application/json");
-
-        var response = await _httpClient.PostAsync($"{_apiEndpoint}/models/{_model}:generateContent?key={_apiKey}", content);
-        response.EnsureSuccessStatusCode();
-
+        var response = await _httpClient.SendAsync(request);
+        
+        // Read response for better error messages
         var responseJson = await response.Content.ReadAsStringAsync();
+        
+        if (!response.IsSuccessStatusCode)
+        {
+            throw new HttpRequestException($"Gemini API error ({response.StatusCode}): {responseJson}");
+        }
+
         var result = JsonSerializer.Deserialize<JsonElement>(responseJson);
         
         // Extract text from Gemini response
