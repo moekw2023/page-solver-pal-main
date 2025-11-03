@@ -89,7 +89,9 @@ export const StudyBuddyAI = () => {
 
     const recentTopics = [...new Set(
       history.slice(0, 10).map(item => item.subject).filter(Boolean)
-    )] as string[];
+    )] as string[];    const avgSessionTime = sessions.length > 0
+      ? sessions.reduce((sum, s) => sum + s.duration, 0) / sessions.length
+      : 0;
 
     setProfile({
       strengths,
@@ -97,7 +99,7 @@ export const StudyBuddyAI = () => {
       recentTopics,
       studyPatterns: {
         preferredTime,
-        averageSession: stats.averageStudyTime,
+        averageSession: avgSessionTime,
         totalProblems: history.length
       }
     });
