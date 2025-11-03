@@ -1,0 +1,68 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - Student Helper</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="~/css/app.css" asp-append-version="true" />
+    <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body class="bg-gradient-to-br from-blue-50 to-purple-50 min-h-screen">
+    <!-- Navigation -->
+    <nav class="bg-white shadow-lg">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16">
+                <div class="flex items-center">
+                    <a asp-controller="Home" asp-action="Index" class="flex items-center space-x-2">
+                        <i data-lucide="graduation-cap" class="w-8 h-8 text-blue-600"></i>
+                        <span class="text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                            Student Helper
+                        </span>
+                    </a>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <a asp-controller="Camera" asp-action="Index" class="flex items-center space-x-1 px-4 py-2 rounded-lg hover:bg-blue-50 transition">
+                        <i data-lucide="camera" class="w-5 h-5"></i>
+                        <span>Solve</span>
+                    </a>
+                    <a asp-controller="History" asp-action="Index" class="flex items-center space-x-1 px-4 py-2 rounded-lg hover:bg-blue-50 transition">
+                        <i data-lucide="history" class="w-5 h-5"></i>
+                        <span>History</span>
+                    </a>
+                    <a asp-controller="Achievements" asp-action="Index" class="flex items-center space-x-1 px-4 py-2 rounded-lg hover:bg-blue-50 transition">
+                        <i data-lucide="trophy" class="w-5 h-5"></i>
+                        <span>Achievements</span>
+                    </a>
+                    <a asp-controller="Dashboard" asp-action="Index" class="flex items-center space-x-1 px-4 py-2 rounded-lg hover:bg-blue-50 transition">
+                        <i data-lucide="layout-dashboard" class="w-5 h-5"></i>
+                        <span>Dashboard</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        @RenderBody()
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-white border-t mt-12">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+            <div class="text-center text-gray-600">
+                &copy; 2025 Student Helper - Your AI-Powered Learning Companion
+            </div>
+        </div>
+    </footer>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/7.0.0/signalr.min.js"></script>
+    <script src="~/js/site.js" asp-append-version="true"></script>
+    @await RenderSectionAsync("Scripts", required: false)
+    <script>
+        // Initialize Lucide icons
+        lucide.createIcons();
+    </script>
+</body>
+</html>

@@ -1,0 +1,189 @@
+@model List<StudentHelper.Core.Models.Achievement>
+@{
+    ViewData["Title"] = "Achievements - Student Helper";
+}
+
+<div class="max-w-6xl mx-auto">
+    <!-- Header -->
+    <div class="bg-white rounded-xl shadow-lg p-8 mb-8">
+        <div class="flex items-center justify-between mb-6">
+            <h1 class="text-3xl font-bold flex items-center gap-2">
+                <i data-lucide="trophy" class="w-8 h-8 text-yellow-600"></i>
+                Achievements
+            </h1>
+            <button onclick="checkAchievements()" 
+                    class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition">
+                <i data-lucide="refresh-cw" class="w-5 h-5 inline mr-2"></i>
+                Check Progress
+            </button>
+        </div>
+
+        <!-- Overall Progress -->
+        <div class="bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg p-6">
+            <div class="flex items-center justify-between mb-2">
+                <span class="text-lg font-semibold">Overall Progress</span>
+                <span class="text-2xl font-bold text-blue-600">@ViewBag.ProgressPercentage%</span>
+            </div>
+            <div class="w-full bg-gray-200 rounded-full h-4">
+                <div class="bg-gradient-to-r from-blue-600 to-purple-600 h-4 rounded-full transition-all duration-500"
+                     style="width: @ViewBag.ProgressPercentage%"></div>
+            </div>
+            <p class="text-sm text-gray-600 mt-2">
+                @ViewBag.UnlockedCount of @ViewBag.TotalCount achievements unlocked
+            </p>
+        </div>
+    </div>
+
+    <!-- Achievement Categories -->
+    <div class="space-y-6">
+        <!-- Legendary Achievements -->
+        @{
+            var legendary = Model.Where(a => a.Rarity == "legendary").ToList();
+            if (legendary.Any())
+            {
+                <div class="bg-white rounded-xl shadow-lg p-6">
+                    <h2 class="text-2xl font-bold mb-4 flex items-center gap-2">
+                        <span class="text-yellow-400">★</span>
+                        Legendary
+                    </h2>
+                    <div class="grid md:grid-cols-2 gap-4">
+                        @foreach (var achievement in legendary)
+                        {
+                            <div class="border-2 @(achievement.IsUnlocked ? "border-yellow-400 bg-yellow-50" : "border-gray-200 bg-gray-50") rounded-lg p-4 @(achievement.IsUnlocked ? "" : "opacity-60")">
+                                <div class="flex items-start gap-4">
+                                    <div class="text-4xl">@(achievement.IsUnlocked ? "🏆" : "🔒")</div>
+                                    <div class="flex-1">
+                                        <h3 class="font-bold text-lg">@achievement.Title</h3>
+                                        <p class="text-sm text-gray-600 mb-2">@achievement.Description</p>
+                                        @if (achievement.IsUnlocked)
+                                        {
+                                            <p class="text-xs text-green-600">
+                                                Unlocked @achievement.UnlockedAt?.ToString("MMM dd, yyyy")
+                                            </p>
+                                        }
+                                        else
+                                        {
+                                            <div class="mt-2">
+                                                <div class="w-full bg-gray-200 rounded-full h-2">
+                                                    <div class="bg-yellow-400 h-2 rounded-full" 
+                                                         style="width: @((achievement.Progress * 100 / achievement.MaxProgress))%"></div>
+                                                </div>
+                                                <p class="text-xs text-gray-500 mt-1">
+                                                    @achievement.Progress / @achievement.MaxProgress
+                                                </p>
+                                            </div>
+                                        }
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+            }
+
+            // Epic Achievements
+            var epic = Model.Where(a => a.Rarity == "epic").ToList();
+            if (epic.Any())
+            {
+                <div class="bg-white rounded-xl shadow-lg p-6">
+                    <h2 class="text-2xl font-bold mb-4 flex items-center gap-2">
+                        <span class="text-purple-600">★</span>
+                        Epic
+                    </h2>
+                    <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        @foreach (var achievement in epic)
+                        {
+                            <div class="border-2 @(achievement.IsUnlocked ? "border-purple-400 bg-purple-50" : "border-gray-200 bg-gray-50") rounded-lg p-4 @(achievement.IsUnlocked ? "" : "opacity-60")">
+                                <div class="flex items-start gap-3">
+                                    <div class="text-3xl">@(achievement.IsUnlocked ? "💎" : "🔒")</div>
+                                    <div class="flex-1">
+                                        <h3 class="font-bold">@achievement.Title</h3>
+                                        <p class="text-xs text-gray-600 mb-2">@achievement.Description</p>
+                                        @if (!achievement.IsUnlocked && achievement.MaxProgress > 0)
+                                        {
+                                            <div class="w-full bg-gray-200 rounded-full h-2">
+                                                <div class="bg-purple-400 h-2 rounded-full" 
+                                                     style="width: @((achievement.Progress * 100 / achievement.MaxProgress))%"></div>
+                                            </div>
+                                        }
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+            }
+
+            // Rare Achievements
+            var rare = Model.Where(a => a.Rarity == "rare").ToList();
+            if (rare.Any())
+            {
+                <div class="bg-white rounded-xl shadow-lg p-6">
+                    <h2 class="text-2xl font-bold mb-4 flex items-center gap-2">
+                        <span class="text-blue-600">★</span>
+                        Rare
+                    </h2>
+                    <div class="grid md:grid-cols-3 lg:grid-cols-4 gap-4">
+                        @foreach (var achievement in rare)
+                        {
+                            <div class="border @(achievement.IsUnlocked ? "border-blue-300 bg-blue-50" : "border-gray-200 bg-gray-50") rounded-lg p-3 @(achievement.IsUnlocked ? "" : "opacity-50")">
+                                <div class="text-center">
+                                    <div class="text-2xl mb-2">@(achievement.IsUnlocked ? "⭐" : "🔒")</div>
+                                    <h3 class="font-semibold text-sm">@achievement.Title</h3>
+                                    <p class="text-xs text-gray-600">@achievement.Description</p>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+            }
+
+            // Common Achievements
+            var common = Model.Where(a => a.Rarity == "common").ToList();
+            if (common.Any())
+            {
+                <div class="bg-white rounded-xl shadow-lg p-6">
+                    <h2 class="text-2xl font-bold mb-4 flex items-center gap-2">
+                        <span class="text-gray-600">★</span>
+                        Common
+                    </h2>
+                    <div class="grid md:grid-cols-4 lg:grid-cols-5 gap-3">
+                        @foreach (var achievement in common)
+                        {
+                            <div class="border @(achievement.IsUnlocked ? "border-green-300 bg-green-50" : "border-gray-200 bg-gray-50") rounded-lg p-3 text-center @(achievement.IsUnlocked ? "" : "opacity-40")">
+                                <div class="text-xl mb-1">@(achievement.IsUnlocked ? "✓" : "○")</div>
+                                <h3 class="font-semibold text-xs">@achievement.Title</h3>
+                            </div>
+                        }
+                    </div>
+                </div>
+            }
+        }
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        async function checkAchievements() {
+            try {
+                const response = await fetch('@Url.Action("CheckAchievements", "Achievements")', {
+                    method: 'POST'
+                });
+
+                const data = await response.json();
+
+                if (data.success && data.newAchievements && data.newAchievements.length > 0) {
+                    alert(`Congratulations! You unlocked ${data.newAchievements.length} new achievement(s)!`);
+                    location.reload();
+                } else {
+                    alert('No new achievements unlocked. Keep working!');
+                }
+            } catch (err) {
+                alert('Error checking achievements: ' + err.message);
+            }
+        }
+
+        // Initialize Lucide icons
+        lucide.createIcons();
+    </script>
+}
