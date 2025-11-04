@@ -1,222 +1,646 @@
 @{
-    ViewData["Title"] = "Camera Scan - Student Helper";
+    ViewData["Title"] = "الكاميرا - Camera";
+    var currentLanguage = Context.Session.GetString("Language") ?? "ar";
+    var isRTL = currentLanguage == "ar";
+    var isArabic = currentLanguage == "ar";
 }
 
-<div class="max-w-4xl mx-auto">
-    <div class="bg-white rounded-xl shadow-lg p-8">
-        <h1 class="text-3xl font-bold mb-6 flex items-center gap-2">
-            <i data-lucide="camera" class="w-8 h-8 text-blue-600"></i>
-            Scan Your Math Problem
-        </h1>
-
-        <!-- Camera/Upload Section -->
-        <div class="mb-8">
-            <div class="border-2 border-dashed border-gray-300 rounded-xl p-12 text-center bg-gray-50 hover:bg-gray-100 transition">
-                <div id="camera-preview" class="hidden">
-                    <video id="video" autoplay class="w-full rounded-lg mb-4"></video>
-                    <button onclick="captureImage()" 
-                            class="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition">
-                        <i data-lucide="camera" class="w-5 h-5 inline"></i>
-                        Capture Photo
-                    </button>
-                </div>
-                
-                <div id="upload-area">
-                    <i data-lucide="upload" class="w-16 h-16 text-gray-400 mx-auto mb-4"></i>
-                    <p class="text-gray-600 mb-4">Upload an image or use your camera</p>
-                    <div class="flex justify-center gap-4">
-                        <label class="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition cursor-pointer">
-                            <i data-lucide="upload" class="w-5 h-5 inline mr-2"></i>
-                            Upload Image
-                            <input type="file" id="image-upload" accept="image/*" class="hidden" onchange="handleImageUpload(event)">
-                        </label>
-                        <button onclick="startCamera()" 
-                                class="bg-purple-600 text-white px-6 py-3 rounded-lg hover:bg-purple-700 transition">
-                            <i data-lucide="camera" class="w-5 h-5 inline mr-2"></i>
-                            Use Camera
-                        </button>
-                    </div>
-                </div>
-
-                <canvas id="canvas" class="hidden"></canvas>
-                <img id="preview" class="hidden w-full rounded-lg mt-4">
-            </div>
-        </div>
-
-        <!-- Context Input -->
-        <div class="mb-6">
-            <label class="block text-sm font-semibold mb-2">Additional Context (Optional)</label>
-            <textarea id="context" 
-                      class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      rows="3" 
-                      placeholder="Add any additional information about the problem..."></textarea>
-        </div>
-
-        <!-- Analyze Button -->
-        <button id="analyze-btn" 
-                onclick="analyzeImage()" 
-                disabled
-                class="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white px-6 py-4 rounded-lg text-lg font-semibold hover:shadow-lg transition disabled:opacity-50 disabled:cursor-not-allowed">
-            <i data-lucide="sparkles" class="w-6 h-6 inline mr-2"></i>
-            Analyze Problem
+<!DOCTYPE html>
+<html lang="@currentLanguage" dir="@(isRTL ? "rtl" : "ltr")">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@(isArabic ? "مساعد الطالب - الكاميرا" : "Student Helper - Camera")</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { 
+            font-family: @(isArabic ? "'Cairo'" : "'Inter'"), sans-serif; 
+        }
+        .ai-response { animation: slideIn 0.5s ease-out; }
+        @@keyframes slideIn {
+            from { transform: translateY(20px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        .loading-pulse { animation: pulse 1.5s ease-in-out infinite; }
+        @@keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        .gradient-bg {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .card-shadow {
+            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            transition: all 0.3s ease;
+        }
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.4);
+        }
+        .rtl-flip {
+            @(isRTL ? "transform: scaleX(-1);" : "")
+        }
+        @@keyframes slideInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        @@keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+            to {
+                opacity: 1;
+            }
+        }
+        .animate-slide-in {
+            animation: slideInUp 0.6s ease-out forwards;
+        }
+        .animate-fade-in {
+            animation: fadeIn 0.8s ease-out forwards;
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-purple-50 to-blue-50 min-h-screen">
+    
+    <!-- Language Switcher -->
+    <div class="fixed top-4 @(isRTL ? "left-4" : "right-4") z-50">
+        <button onclick="toggleLanguage()" class="bg-white rounded-full px-6 py-3 shadow-lg hover:shadow-xl transition-all duration-300 flex items-center gap-2">
+            <i class="fas fa-globe text-purple-600"></i>
+            <span class="font-semibold">@(isArabic ? "English" : "عربي")</span>
         </button>
+    </div>
 
-        <!-- Loading State -->
-        <div id="loading" class="hidden mt-8 text-center">
-            <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-            <p class="text-gray-600">Analyzing your problem...</p>
-        </div>
-
-        <!-- Results Section -->
-        <div id="results" class="hidden mt-8">
-            <div class="bg-green-50 border border-green-200 rounded-xl p-6">
-                <h2 class="text-2xl font-bold mb-4 flex items-center gap-2">
-                    <i data-lucide="check-circle" class="w-6 h-6 text-green-600"></i>
-                    Solution
-                </h2>
-                <div id="solution-content" class="prose max-w-none"></div>
-                
-                <div class="mt-6 flex gap-4">
-                    <button onclick="generateSteps()" 
-                            class="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition">
-                        <i data-lucide="list-ordered" class="w-5 h-5 inline mr-2"></i>
-                        Show Steps
-                    </button>
-                    <button onclick="saveToHistory()" 
-                            class="bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 transition">
-                        <i data-lucide="save" class="w-5 h-5 inline mr-2"></i>
-                        Save to History
-                    </button>
+    <!-- Header -->
+    <div class="gradient-bg text-white py-12">
+        <div class="container mx-auto px-4">
+            <div class="text-center">
+                <div class="inline-block p-4 bg-white/20 rounded-full mb-4">
+                    <i class="fas fa-brain text-white text-5xl"></i>
                 </div>
-            </div>
-
-            <!-- Step-by-Step Solution -->
-            <div id="steps-section" class="hidden mt-6 bg-blue-50 border border-blue-200 rounded-xl p-6">
-                <h3 class="text-xl font-bold mb-4">Step-by-Step Solution</h3>
-                <div id="steps-content" class="space-y-4"></div>
+                <h1 class="text-5xl font-bold mb-3">
+                    @(isArabic ? "🎓 مساعد الطالب الذكي" : "🎓 Smart Student Helper")
+                </h1>
+                <p class="text-xl text-purple-100 max-w-2xl mx-auto">
+                    @(isArabic ? "قم بتحميل صورة مسألة رياضية واحصل على حل تفصيلي فوري من الذكاء الاصطناعي" : "Upload a math problem image and get instant detailed AI-powered solution")
+                </p>
             </div>
         </div>
     </div>
-</div>
 
-@section Scripts {
-    <script>
-        let currentImage = null;
-        let videoStream = null;
+    <div class="container mx-auto px-4 py-12 max-w-6xl">
+        
+        <!-- Upload Card -->
+        <div class="bg-white rounded-3xl card-shadow p-8 mb-8 relative overflow-hidden">
+            <div class="absolute top-0 @(isRTL ? "left-0" : "right-0") w-64 h-64 bg-purple-100 rounded-full -translate-y-32 @(isRTL ? "-translate-x-32" : "translate-x-32") opacity-50"></div>
+            
+            <div class="relative z-10">
+                <div class="text-center mb-8">
+                    <div class="inline-block p-6 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-2xl mb-4 shadow-lg">
+                        <i class="fas fa-camera text-white text-5xl"></i>
+                    </div>
+                    <h2 class="text-3xl font-bold text-gray-800 mb-3">
+                        @(isArabic ? "ارفع صورة المسألة" : "Upload Problem Image")
+                    </h2>
+                    <p class="text-gray-600 text-lg">
+                        @(isArabic ? "اختر صورة أو التقط صورة جديدة للمسألة الرياضية" : "Choose an image or take a new photo of your math problem")
+                    </p>
+                </div>
 
-        async function startCamera() {
-            try {
-                videoStream = await navigator.mediaDevices.getUserMedia({ video: true });
-                const video = document.getElementById('video');
-                video.srcObject = videoStream;
+                <form id="uploadForm" class="space-y-6">
+                    <!-- Image Preview -->
+                    <div id="imagePreview" class="hidden mb-6">
+                        <div class="relative rounded-2xl overflow-hidden border-4 border-purple-300 shadow-lg">
+                            <img id="previewImg" class="w-full h-auto max-h-96 object-contain bg-gradient-to-br from-gray-50 to-gray-100" alt="Preview" />
+                            <button type="button" onclick="clearImage()" class="absolute top-4 @(isRTL ? "left-4" : "right-4") bg-red-500 text-white rounded-full w-12 h-12 hover:bg-red-600 transition-all shadow-lg flex items-center justify-center">
+                                <i class="fas fa-times text-xl"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- File Input -->
+                    <div class="flex justify-center">
+                        <label for="fileInput" class="cursor-pointer w-full">
+                            <div class="border-4 border-dashed border-purple-300 rounded-3xl p-16 hover:border-purple-500 transition-all duration-300 hover:bg-purple-50 text-center">
+                                <i class="fas fa-cloud-upload-alt text-7xl text-purple-400 mb-6"></i>
+                                <p class="text-2xl font-bold text-gray-700 mb-3">
+                                    @(isArabic ? "اضغط هنا لاختيار صورة" : "Click here to choose an image")
+                                </p>
+                                <p class="text-gray-500 text-lg">@(isArabic ? "أو اسحب الصورة وأفلتها هنا" : "or drag and drop an image here")</p>
+                                <p class="text-sm text-gray-400 mt-4">@(isArabic ? "يدعم: JPG, PNG, JPEG" : "Supports: JPG, PNG, JPEG")</p>
+                            </div>
+                        </label>
+                        <input type="file" id="fileInput" accept="image/*" class="hidden" onchange="previewImage(this)" />
+                    </div>
+
+                    <!-- Optional Context -->
+                    <div class="bg-gray-50 rounded-2xl p-6">
+                        <label class="flex items-center gap-3 text-gray-700 font-semibold mb-3 text-lg">
+                            <i class="fas fa-comment-dots text-purple-600 text-xl"></i>
+                            @(isArabic ? "سياق إضافي (اختياري)" : "Additional Context (Optional)")
+                        </label>
+                        <textarea id="contextInput" rows="4" class="w-full px-6 py-4 border-2 border-gray-300 rounded-xl focus:border-purple-500 focus:outline-none transition-all resize-none text-lg" placeholder="@(isArabic ? "أضف أي معلومات إضافية تساعد في فهم المسألة..." : "Add any additional information to help understand the problem...")"></textarea>
+                    </div>
+
+                    <!-- Analyze Button -->
+                    <button type="submit" class="w-full btn-primary text-white font-bold py-6 rounded-2xl disabled:opacity-50 disabled:cursor-not-allowed text-xl shadow-lg" id="analyzeBtn">
+                        <i class="fas fa-magic @(isRTL ? "ml-3" : "mr-3")"></i>
+                        <span id="btnText">@(isArabic ? "تحليل بالذكاء الاصطناعي" : "Analyze with AI")</span>
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Loading State -->
+        <div id="loadingState" class="hidden bg-white rounded-3xl card-shadow p-12 mb-8">
+            <div class="text-center">
+                <div class="loading-pulse inline-block p-8 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-3xl mb-6 shadow-xl">
+                    <i class="fas fa-brain text-white text-6xl"></i>
+                </div>
+                <h3 class="text-3xl font-bold text-gray-800 mb-4">
+                    @(isArabic ? "جاري التحليل..." : "Analyzing...")
+                </h3>
+                <p class="text-gray-600 text-xl mb-8">
+                    @(isArabic ? "الذكاء الاصطناعي يعمل على حل المسألة بعناية" : "AI is carefully analyzing and solving the problem")
+                </p>
+                <div class="flex justify-center gap-2">
+                    <div class="w-4 h-4 bg-purple-600 rounded-full animate-bounce"></div>
+                    <div class="w-4 h-4 bg-purple-600 rounded-full animate-bounce" style="animation-delay: 0.1s"></div>
+                    <div class="w-4 h-4 bg-purple-600 rounded-full animate-bounce" style="animation-delay: 0.2s"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- AI Response -->
+        <div id="responseContainer" class="hidden ai-response">
+            <div class="bg-gradient-to-br from-purple-600 to-indigo-700 rounded-3xl card-shadow p-8 text-white mb-8 relative overflow-hidden">
+                <div class="absolute top-0 @(isRTL ? "right-0" : "left-0") w-96 h-96 bg-white/10 rounded-full -translate-y-48 @(isRTL ? "translate-x-48" : "-translate-x-48")"></div>
                 
-                document.getElementById('upload-area').classList.add('hidden');
-                document.getElementById('camera-preview').classList.remove('hidden');
-                lucide.createIcons();
-            } catch (err) {
-                alert('Could not access camera: ' + err.message);
+                <div class="relative z-10">
+                    <div class="flex items-center justify-between mb-8 flex-wrap gap-4">
+                        <div class="flex items-center gap-4">
+                            <div class="p-4 bg-white rounded-2xl shadow-lg">
+                                <i class="fas fa-robot text-purple-600 text-3xl"></i>
+                            </div>
+                            <div>
+                                <h3 class="text-3xl font-bold">@(isArabic ? "حل الذكاء الاصطناعي" : "AI Solution")</h3>
+                                <p class="text-purple-100 text-lg">@(isArabic ? "تم التحليل بنجاح ✨" : "Analysis completed successfully ✨")</p>
+                            </div>
+                        </div>
+                        <button onclick="copyResponse()" class="bg-white text-purple-600 px-6 py-3 rounded-xl hover:bg-purple-50 transition-all font-semibold shadow-lg">
+                            <i class="fas fa-copy @(isRTL ? "ml-2" : "mr-2")"></i>
+                            @(isArabic ? "نسخ" : "Copy")
+                        </button>
+                    </div>
+
+                    <div id="responseContent" class="bg-gradient-to-br from-gray-50 to-white text-gray-800 rounded-2xl p-8 prose prose-lg max-w-none shadow-2xl space-y-6" style="@(isRTL ? "direction: rtl; text-align: right;" : "")">
+                        <!-- AI response will be inserted here -->
+                    </div>
+
+                    <div class="mt-8 flex justify-between items-center flex-wrap gap-4">
+                        <div class="flex gap-3 flex-wrap">
+                            <a href="/History" class="bg-white text-purple-600 px-6 py-3 rounded-xl hover:bg-purple-50 transition-all font-semibold shadow-lg inline-block">
+                                <i class="fas fa-history @(isRTL ? "ml-2" : "mr-2")"></i>
+                                @(isArabic ? "عرض السجل" : "View History")
+                            </a>
+                            <button onclick="shareResponse()" class="bg-purple-800 text-white px-6 py-3 rounded-xl hover:bg-purple-900 transition-all font-semibold shadow-lg">
+                                <i class="fas fa-share-alt @(isRTL ? "ml-2" : "mr-2")"></i>
+                                @(isArabic ? "مشاركة" : "Share")
+                            </button>
+                        </div>
+                        <button onclick="newProblem()" class="text-white hover:text-purple-200 transition-all font-semibold text-lg">
+                            <i class="fas fa-plus-circle @(isRTL ? "ml-2" : "mr-2")"></i>
+                            @(isArabic ? "مسألة جديدة" : "New Problem")
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Stats -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                <div class="bg-white rounded-2xl p-6 card-shadow text-center">
+                    <div class="text-4xl mb-2">✅</div>
+                    <div class="text-2xl font-bold text-gray-800">@(isArabic ? "تم الحل" : "Solved")</div>
+                    <div class="text-gray-600">@(isArabic ? "مسألة واحدة" : "1 Problem")</div>
+                </div>
+                <div class="bg-white rounded-2xl p-6 card-shadow text-center">
+                    <div class="text-4xl mb-2">⚡</div>
+                    <div class="text-2xl font-bold text-gray-800">@(isArabic ? "فوري" : "Instant")</div>
+                    <div class="text-gray-600">@(isArabic ? "تحليل سريع" : "Quick Analysis")</div>
+                </div>
+                <div class="bg-white rounded-2xl p-6 card-shadow text-center">
+                    <div class="text-4xl mb-2">🎯</div>
+                    <div class="text-2xl font-bold text-gray-800">@(isArabic ? "دقيق" : "Accurate")</div>
+                    <div class="text-gray-600">@(isArabic ? "حل موثوق" : "Reliable Solution")</div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        let currentLanguage = '@currentLanguage';
+        let currentHistoryId = null;
+        const isArabic = currentLanguage === 'ar';
+        const isRTL = currentLanguage === 'ar';
+
+        function toggleLanguage() {
+            const newLang = currentLanguage === 'ar' ? 'en' : 'ar';
+            fetch('/Camera/SetLanguage', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: 'language=' + newLang
+            })
+            .then(() => window.location.reload());
+        }
+
+        function previewImage(input) {
+            if (input.files && input.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    document.getElementById('previewImg').src = e.target.result;
+                    document.getElementById('imagePreview').classList.remove('hidden');
+                };
+                reader.readAsDataURL(input.files[0]);
             }
         }
 
-        function captureImage() {
-            const video = document.getElementById('video');
-            const canvas = document.getElementById('canvas');
-            const context = canvas.getContext('2d');
-            
-            canvas.width = video.videoWidth;
-            canvas.height = video.videoHeight;
-            context.drawImage(video, 0, 0);
-            
-            canvas.toBlob(blob => {
-                currentImage = blob;
-                const preview = document.getElementById('preview');
-                preview.src = URL.createObjectURL(blob);
-                preview.classList.remove('hidden');
-                
-                document.getElementById('analyze-btn').disabled = false;
-                
-                // Stop camera
-                if (videoStream) {
-                    videoStream.getTracks().forEach(track => track.stop());
-                }
-                document.getElementById('camera-preview').classList.add('hidden');
+        function clearImage() {
+            document.getElementById('fileInput').value = '';
+            document.getElementById('imagePreview').classList.add('hidden');
+        }
+
+        // Image compression function
+        async function compressImage(file, maxWidth = 1920, maxHeight = 1080, quality = 0.8) {
+            return new Promise((resolve) => {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const img = new Image();
+                    img.onload = () => {
+                        const canvas = document.createElement('canvas');
+                        let width = img.width;
+                        let height = img.height;
+                        
+                        // Calculate new dimensions
+                        if (width > maxWidth || height > maxHeight) {
+                            if (width > height) {
+                                if (width > maxWidth) {
+                                    height = (height / width) * maxWidth;
+                                    width = maxWidth;
+                                }
+                            } else {
+                                if (height > maxHeight) {
+                                    width = (width / height) * maxHeight;
+                                    height = maxHeight;
+                                }
+                            }
+                        }
+                        
+                        canvas.width = width;
+                        canvas.height = height;
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0, width, height);
+                        
+                        canvas.toBlob((blob) => {
+                            resolve(new File([blob], file.name, { 
+                                type: 'image/jpeg',
+                                lastModified: Date.now()
+                            }));
+                        }, 'image/jpeg', quality);
+                    };
+                    img.src = e.target.result;
+                };
+                reader.readAsDataURL(file);
             });
         }
 
-        function handleImageUpload(event) {
-            const file = event.target.files[0];
-            if (!file) return;
-
-            currentImage = file;
-            const preview = document.getElementById('preview');
-            preview.src = URL.createObjectURL(file);
-            preview.classList.remove('hidden');
+        document.getElementById('uploadForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            console.log('Form submitted');
             
-            document.getElementById('analyze-btn').disabled = false;
-            lucide.createIcons();
-        }
+            const fileInput = document.getElementById('fileInput');
+            const context = document.getElementById('contextInput').value;
+            
+            if (!fileInput.files[0]) {
+                alert(isArabic ? 'يرجى اختيار صورة' : 'Please select an image');
+                return;
+            }
 
-        async function analyzeImage() {
-            if (!currentImage) return;
+            console.log('File selected:', fileInput.files[0].name);
+            console.log('Original size:', (fileInput.files[0].size / 1024 / 1024).toFixed(2), 'MB');
+            console.log('Language:', currentLanguage);
+
+            // Show loading
+            document.getElementById('loadingState').classList.remove('hidden');
+            document.getElementById('responseContainer').classList.add('hidden');
+            document.getElementById('analyzeBtn').disabled = true;
+            const spinnerMargin = isRTL ? 'ml-3' : 'mr-3';
+            document.getElementById('btnText').innerHTML = isArabic ? 
+                '<i class="fas fa-spinner fa-spin ' + spinnerMargin + '"></i> جاري ضغط الصورة...' : 
+                '<i class="fas fa-spinner fa-spin ' + spinnerMargin + '"></i> Compressing image...';
+
+            // Compress image if it's larger than 500KB
+            let imageToUpload = fileInput.files[0];
+            if (imageToUpload.size > 500 * 1024) {
+                console.log('Compressing image...');
+                imageToUpload = await compressImage(imageToUpload);
+                console.log('Compressed size:', (imageToUpload.size / 1024 / 1024).toFixed(2), 'MB');
+            }
+
+            // Update loading text to analyzing
+            document.getElementById('btnText').innerHTML = isArabic ? 
+                '<i class="fas fa-spinner fa-spin ' + spinnerMargin + '"></i> جاري التحليل...' : 
+                '<i class="fas fa-spinner fa-spin ' + spinnerMargin + '"></i> Analyzing...';
 
             const formData = new FormData();
-            formData.append('image', currentImage);
-            formData.append('context', document.getElementById('context').value);
+            formData.append('image', imageToUpload);
+            formData.append('context', context);
+            formData.append('language', currentLanguage);
 
-            document.getElementById('loading').classList.remove('hidden');
-            document.getElementById('results').classList.add('hidden');
+            console.log('Sending request to /Camera/AnalyzeImage');
+
+            // Start elapsed time counter
+            const startTime = Date.now();
+            const progressInterval = setInterval(() => {
+                const elapsed = Math.floor((Date.now() - startTime) / 1000);
+                const progressMargin = isRTL ? 'ml-3' : 'mr-3';
+                document.getElementById('btnText').innerHTML = isArabic ? 
+                    `<i class="fas fa-spinner fa-spin ${progressMargin}"></i> جاري التحليل... ${elapsed}ث` : 
+                    `<i class="fas fa-spinner fa-spin ${progressMargin}"></i> Analyzing... ${elapsed}s`;
+            }, 1000);
 
             try {
-                const response = await fetch('@Url.Action("AnalyzeImage", "Camera")', {
+                const response = await fetch('/Camera/AnalyzeImage', {
                     method: 'POST',
                     body: formData
                 });
 
+                clearInterval(progressInterval); // Stop the timer
+                console.log('Response status:', response.status);
                 const data = await response.json();
+                console.log('Response data:', data);
 
                 if (data.success) {
-                    document.getElementById('solution-content').innerHTML = 
-                        data.result.replace(/\n/g, '<br>');
-                    document.getElementById('results').classList.remove('hidden');
+                    console.log('Analysis successful');
+                    currentHistoryId = data.historyId;
+                    displayResponse(data.result);
                 } else {
-                    alert('Error: ' + data.error);
+                    console.error('Analysis failed:', data.error);
+                    alert((isArabic ? 'حدث خطأ: ' : 'Error: ') + data.error);
                 }
-            } catch (err) {
-                alert('Error analyzing image: ' + err.message);
+            } catch (error) {
+                clearInterval(progressInterval); // Stop the timer on error
+                console.error('Connection error:', error);
+                alert(isArabic ? 'حدث خطأ في الاتصال: ' + error.message : 'Connection error: ' + error.message);
             } finally {
-                document.getElementById('loading').classList.add('hidden');
-                lucide.createIcons();
+                clearInterval(progressInterval); // Ensure timer is stopped
+                document.getElementById('loadingState').classList.add('hidden');
+                document.getElementById('analyzeBtn').disabled = false;
+                const iconMargin = isRTL ? 'ml-3' : 'mr-3';
+                document.getElementById('btnText').innerHTML = isArabic ? 
+                    '<i class="fas fa-magic ' + iconMargin + '"></i> تحليل بالذكاء الاصطناعي' : 
+                    '<i class="fas fa-magic ' + iconMargin + '"></i> Analyze with AI';
+            }
+        });
+
+        function displayResponse(result) {
+            const formatted = formatResponse(result);
+            const responseContainer = document.getElementById('responseContainer');
+            const responseContent = document.getElementById('responseContent');
+            
+            responseContent.innerHTML = formatted;
+            responseContainer.classList.remove('hidden');
+            responseContainer.classList.add('animate-fade-in');
+            
+            // Smooth scroll to response
+            setTimeout(() => {
+                responseContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }, 100);
+        }
+
+        function formatResponse(text) {
+            // Modern card-based formatting for AI response
+            let formatted = '';
+            
+            // Check if response contains structured sections
+            const hasSections = text.includes('##') || text.includes('المسألة') || text.includes('الحل') || text.includes('Problem') || text.includes('Solution');
+            
+            if (hasSections) {
+                // Split by headers
+                const sections = text.split(/(?=##|\n\n(?=[📝🎯📚✅💡]))/);
+                
+                sections.forEach(section => {
+                    if (!section.trim()) return;
+                    
+                    // Extract emoji and title
+                    const emojiMatch = section.match(/^([📝🎯📚✅💡✨🔍⚡])\s*/);
+                    const emoji = emojiMatch ? emojiMatch[1] : '';
+                    let content = section.replace(/^([📝🎯📚✅💡✨🔍⚡])\s*/, '');
+                    
+                    // Extract title if it starts with ##
+                    let title = '';
+                    if (content.startsWith('##')) {
+                        const titleMatch = content.match(/^##\s*(.+?)(?:\n|$)/);
+                        if (titleMatch) {
+                            title = titleMatch[1].trim();
+                            content = content.replace(/^##\s*.+?\n/, '');
+                        }
+                    } else if (content.match(/^(المسألة|الحل النهائي|الحل|الخطوات|التحقق|ملاحظات|Problem|Solution|Steps|Verification|Notes)/i)) {
+                        const titleMatch = content.match(/^(.+?)(?:\n|:)/);
+                        if (titleMatch) {
+                            title = titleMatch[1].trim();
+                            content = content.replace(/^.+?(?:\n|:)/, '');
+                        }
+                    }
+                    
+                    // Format the content
+                    content = content.trim();
+                    
+                    // Format bold text
+                    content = content.replace(/\*\*(.+?)\*\*/g, '<strong class="text-purple-700 font-bold">$1</strong>');
+                    
+                    // Format numbered lists
+                    content = content.replace(/^(\d+[\.\)])\s*(.+?)$/gm, 
+                        '<div class="flex items-start mb-3 group hover:translate-x-2 transition-transform duration-200">' +
+                        '<span class="inline-flex items-center justify-center w-8 h-8 bg-gradient-to-br from-purple-500 to-indigo-600 text-white font-bold rounded-lg ' + (isRTL ? 'ml-3' : 'mr-3') + ' flex-shrink-0 shadow-md group-hover:shadow-lg transition-shadow">$1</span>' +
+                        '<span class="flex-1 pt-1">$2</span>' +
+                        '</div>');
+                    
+                    // Format bullet points
+                    content = content.replace(/^[•\-]\s*(.+?)$/gm, 
+                        '<div class="flex items-start mb-2">' +
+                        '<span class="text-purple-500 font-bold ' + (isRTL ? 'ml-2' : 'mr-2') + '">•</span>' +
+                        '<span>$1</span>' +
+                        '</div>');
+                    
+                    // Format line breaks
+                    content = content.replace(/\n\n/g, '<br><br>');
+                    content = content.replace(/\n/g, '<br>');
+                    
+                    // Create card for section
+                    if (title || emoji) {
+                        const colorClasses = {
+                            '📝': 'from-blue-50 to-blue-100 border-blue-300',
+                            '🎯': 'from-green-50 to-green-100 border-green-300',
+                            '📚': 'from-purple-50 to-purple-100 border-purple-300',
+                            '✅': 'from-emerald-50 to-emerald-100 border-emerald-300',
+                            '💡': 'from-amber-50 to-amber-100 border-amber-300',
+                            '✨': 'from-pink-50 to-pink-100 border-pink-300',
+                            '🔍': 'from-indigo-50 to-indigo-100 border-indigo-300',
+                            '⚡': 'from-yellow-50 to-yellow-100 border-yellow-300'
+                        };
+                        
+                        const cardColor = colorClasses[emoji] || 'from-gray-50 to-gray-100 border-gray-300';
+                        
+                        formatted += `
+                            <div class="bg-gradient-to-br ${cardColor} border-2 rounded-2xl p-6 mb-4 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 animate-slide-in">
+                                ${title ? `<h3 class="text-2xl font-bold mb-4 flex items-center">
+                                    ${emoji ? `<span class="text-3xl ${isRTL ? 'ml-3' : 'mr-3'}">${emoji}</span>` : ''}
+                                    <span class="bg-gradient-to-r from-purple-600 to-indigo-600 bg-clip-text text-transparent">${title}</span>
+                                </h3>` : ''}
+                                <div class="text-gray-800 text-lg leading-relaxed">${content}</div>
+                            </div>`;
+                    } else {
+                        formatted += `<div class="text-gray-800 text-lg leading-relaxed mb-4">${content}</div>`;
+                    }
+                });
+            } else {
+                // Simple formatting for plain text
+                text = text.replace(/\*\*(.+?)\*\*/g, '<strong class="text-purple-700 font-bold">$1</strong>');
+                
+                text = text.replace(/^(\d+[\.\)])\s*(.+?)$/gm, 
+                    '<div class="flex items-start mb-3 group hover:translate-x-2 transition-transform duration-200">' +
+                    '<span class="inline-flex items-center justify-center w-8 h-8 bg-gradient-to-br from-purple-500 to-indigo-600 text-white font-bold rounded-lg ' + (isRTL ? 'ml-3' : 'mr-3') + ' flex-shrink-0 shadow-md">$1</span>' +
+                    '<span class="flex-1 pt-1">$2</span>' +
+                    '</div>');
+                
+                text = text.replace(/\n\n/g, '</p><p class="mb-4">');
+                text = text.replace(/\n/g, '<br>');
+                
+                formatted = `
+                    <div class="bg-gradient-to-br from-purple-50 to-indigo-50 border-2 border-purple-200 rounded-2xl p-8 shadow-lg">
+                        <p class="text-gray-800 text-lg leading-relaxed mb-4">${text}</p>
+                    </div>`;
+            }
+            
+            return formatted;
+        }        function copyResponse() {
+            const content = document.getElementById('responseContent').innerText;
+            navigator.clipboard.writeText(content).then(() => {
+                const btn = event.target.closest('button');
+                const originalHTML = btn.innerHTML;
+                const checkMargin = isRTL ? 'ml-2' : 'mr-2';
+                btn.innerHTML = '<i class="fas fa-check ' + checkMargin + '"></i>' + (isArabic ? 'تم النسخ!' : 'Copied!');
+                setTimeout(() => {
+                    btn.innerHTML = originalHTML;
+                }, 2000);
+            });
+        }
+
+        function shareResponse() {
+            const content = document.getElementById('responseContent').innerText;
+            if (navigator.share) {
+                navigator.share({
+                    title: isArabic ? 'حل مسألة رياضية' : 'Math Problem Solution',
+                    text: content
+                }).catch(() => copyResponse());
+            } else {
+                copyResponse();
             }
         }
 
-        async function generateSteps() {
-            const question = document.getElementById('solution-content').innerText;
+        function newProblem() {
+            document.getElementById('uploadForm').reset();
+            document.getElementById('imagePreview').classList.add('hidden');
+            document.getElementById('responseContainer').classList.add('hidden');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        // Drag and Drop functionality
+        function setupDragAndDrop() {
+            const dropZones = document.querySelectorAll('[class*="border-dashed"]');
+            const fileInput = document.getElementById('fileInput');
             
-            try {
-                const response = await fetch('@Url.Action("GenerateSteps", "Camera")', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ question: question })
+            dropZones.forEach(dropZone => {
+                // Prevent default drag behaviors
+                ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+                    dropZone.addEventListener(eventName, preventDefaults, false);
+                    document.body.addEventListener(eventName, preventDefaults, false);
                 });
 
-                const data = await response.json();
+                // Highlight drop zone when item is dragged over it
+                ['dragenter', 'dragover'].forEach(eventName => {
+                    dropZone.addEventListener(eventName, highlight, false);
+                });
 
-                if (data.success) {
-                    const stepsContent = document.getElementById('steps-content');
-                    stepsContent.innerHTML = data.steps.replace(/\n/g, '<br>');
-                    document.getElementById('steps-section').classList.remove('hidden');
+                ['dragleave', 'drop'].forEach(eventName => {
+                    dropZone.addEventListener(eventName, unhighlight, false);
+                });
+
+                // Handle dropped files
+                dropZone.addEventListener('drop', handleDrop, false);
+            });
+
+            function preventDefaults(e) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
+
+            function highlight(e) {
+                e.currentTarget.classList.add('border-purple-600', 'bg-purple-100', 'scale-105');
+            }
+
+            function unhighlight(e) {
+                e.currentTarget.classList.remove('border-purple-600', 'bg-purple-100', 'scale-105');
+            }
+
+            function handleDrop(e) {
+                const dt = e.dataTransfer;
+                const files = dt.files;
+
+                if (files.length > 0) {
+                    // Validate file type
+                    const file = files[0];
+                    const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+                    
+                    if (!validTypes.includes(file.type.toLowerCase())) {
+                        alert(isArabic ? 
+                            'نوع الملف غير مدعوم. يرجى رفع صورة بصيغة JPG، PNG، GIF، أو WebP.' :
+                            'Unsupported file type. Please upload a JPG, PNG, GIF, or WebP image.');
+                        return;
+                    }
+
+                    // Validate file size (10MB)
+                    if (file.size > 10 * 1024 * 1024) {
+                        alert(isArabic ? 
+                            'حجم الصورة كبير جداً. الحد الأقصى المسموح به هو 10 ميجابايت.' :
+                            'Image is too large. Maximum allowed size is 10MB.');
+                        return;
+                    }
+
+                    // Set the file to the input
+                    const dataTransfer = new DataTransfer();
+                    dataTransfer.items.add(file);
+                    fileInput.files = dataTransfer.files;
+
+                    // Trigger preview
+                    previewImage(fileInput);
                 }
-            } catch (err) {
-                alert('Error generating steps: ' + err.message);
             }
         }
 
-        function saveToHistory() {
-            alert('Saved to history! (Feature in development)');
-            window.location.href = '@Url.Action("Index", "History")';
-        }
-
-        // Initialize Lucide icons
-        lucide.createIcons();
+        // Initialize drag and drop when page loads
+        document.addEventListener('DOMContentLoaded', setupDragAndDrop);
     </script>
-}
+</body>
+</html>

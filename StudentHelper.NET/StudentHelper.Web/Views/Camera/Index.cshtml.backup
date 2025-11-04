@@ -1,0 +1,222 @@
+@{
+    ViewData["Title"] = "Camera Scan - Student Helper";
+}
+
+<div class="max-w-4xl mx-auto">
+    <div class="bg-white rounded-xl shadow-lg p-8">
+        <h1 class="text-3xl font-bold mb-6 flex items-center gap-2">
+            <i data-lucide="camera" class="w-8 h-8 text-blue-600"></i>
+            Scan Your Math Problem
+        </h1>
+
+        <!-- Camera/Upload Section -->
+        <div class="mb-8">
+            <div class="border-2 border-dashed border-gray-300 rounded-xl p-12 text-center bg-gray-50 hover:bg-gray-100 transition">
+                <div id="camera-preview" class="hidden">
+                    <video id="video" autoplay class="w-full rounded-lg mb-4"></video>
+                    <button onclick="captureImage()" 
+                            class="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition">
+                        <i data-lucide="camera" class="w-5 h-5 inline"></i>
+                        Capture Photo
+                    </button>
+                </div>
+                
+                <div id="upload-area">
+                    <i data-lucide="upload" class="w-16 h-16 text-gray-400 mx-auto mb-4"></i>
+                    <p class="text-gray-600 mb-4">Upload an image or use your camera</p>
+                    <div class="flex justify-center gap-4">
+                        <label class="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition cursor-pointer">
+                            <i data-lucide="upload" class="w-5 h-5 inline mr-2"></i>
+                            Upload Image
+                            <input type="file" id="image-upload" accept="image/*" class="hidden" onchange="handleImageUpload(event)">
+                        </label>
+                        <button onclick="startCamera()" 
+                                class="bg-purple-600 text-white px-6 py-3 rounded-lg hover:bg-purple-700 transition">
+                            <i data-lucide="camera" class="w-5 h-5 inline mr-2"></i>
+                            Use Camera
+                        </button>
+                    </div>
+                </div>
+
+                <canvas id="canvas" class="hidden"></canvas>
+                <img id="preview" class="hidden w-full rounded-lg mt-4">
+            </div>
+        </div>
+
+        <!-- Context Input -->
+        <div class="mb-6">
+            <label class="block text-sm font-semibold mb-2">Additional Context (Optional)</label>
+            <textarea id="context" 
+                      class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      rows="3" 
+                      placeholder="Add any additional information about the problem..."></textarea>
+        </div>
+
+        <!-- Analyze Button -->
+        <button id="analyze-btn" 
+                onclick="analyzeImage()" 
+                disabled
+                class="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white px-6 py-4 rounded-lg text-lg font-semibold hover:shadow-lg transition disabled:opacity-50 disabled:cursor-not-allowed">
+            <i data-lucide="sparkles" class="w-6 h-6 inline mr-2"></i>
+            Analyze Problem
+        </button>
+
+        <!-- Loading State -->
+        <div id="loading" class="hidden mt-8 text-center">
+            <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+            <p class="text-gray-600">Analyzing your problem...</p>
+        </div>
+
+        <!-- Results Section -->
+        <div id="results" class="hidden mt-8">
+            <div class="bg-green-50 border border-green-200 rounded-xl p-6">
+                <h2 class="text-2xl font-bold mb-4 flex items-center gap-2">
+                    <i data-lucide="check-circle" class="w-6 h-6 text-green-600"></i>
+                    Solution
+                </h2>
+                <div id="solution-content" class="prose max-w-none"></div>
+                
+                <div class="mt-6 flex gap-4">
+                    <button onclick="generateSteps()" 
+                            class="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition">
+                        <i data-lucide="list-ordered" class="w-5 h-5 inline mr-2"></i>
+                        Show Steps
+                    </button>
+                    <button onclick="saveToHistory()" 
+                            class="bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 transition">
+                        <i data-lucide="save" class="w-5 h-5 inline mr-2"></i>
+                        Save to History
+                    </button>
+                </div>
+            </div>
+
+            <!-- Step-by-Step Solution -->
+            <div id="steps-section" class="hidden mt-6 bg-blue-50 border border-blue-200 rounded-xl p-6">
+                <h3 class="text-xl font-bold mb-4">Step-by-Step Solution</h3>
+                <div id="steps-content" class="space-y-4"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        let currentImage = null;
+        let videoStream = null;
+
+        async function startCamera() {
+            try {
+                videoStream = await navigator.mediaDevices.getUserMedia({ video: true });
+                const video = document.getElementById('video');
+                video.srcObject = videoStream;
+                
+                document.getElementById('upload-area').classList.add('hidden');
+                document.getElementById('camera-preview').classList.remove('hidden');
+                lucide.createIcons();
+            } catch (err) {
+                alert('Could not access camera: ' + err.message);
+            }
+        }
+
+        function captureImage() {
+            const video = document.getElementById('video');
+            const canvas = document.getElementById('canvas');
+            const context = canvas.getContext('2d');
+            
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            context.drawImage(video, 0, 0);
+            
+            canvas.toBlob(blob => {
+                currentImage = blob;
+                const preview = document.getElementById('preview');
+                preview.src = URL.createObjectURL(blob);
+                preview.classList.remove('hidden');
+                
+                document.getElementById('analyze-btn').disabled = false;
+                
+                // Stop camera
+                if (videoStream) {
+                    videoStream.getTracks().forEach(track => track.stop());
+                }
+                document.getElementById('camera-preview').classList.add('hidden');
+            });
+        }
+
+        function handleImageUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            currentImage = file;
+            const preview = document.getElementById('preview');
+            preview.src = URL.createObjectURL(file);
+            preview.classList.remove('hidden');
+            
+            document.getElementById('analyze-btn').disabled = false;
+            lucide.createIcons();
+        }
+
+        async function analyzeImage() {
+            if (!currentImage) return;
+
+            const formData = new FormData();
+            formData.append('image', currentImage);
+            formData.append('context', document.getElementById('context').value);
+
+            document.getElementById('loading').classList.remove('hidden');
+            document.getElementById('results').classList.add('hidden');
+
+            try {
+                const response = await fetch('@Url.Action("AnalyzeImage", "Camera")', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    document.getElementById('solution-content').innerHTML = 
+                        data.result.replace(/\n/g, '<br>');
+                    document.getElementById('results').classList.remove('hidden');
+                } else {
+                    alert('Error: ' + data.error);
+                }
+            } catch (err) {
+                alert('Error analyzing image: ' + err.message);
+            } finally {
+                document.getElementById('loading').classList.add('hidden');
+                lucide.createIcons();
+            }
+        }
+
+        async function generateSteps() {
+            const question = document.getElementById('solution-content').innerText;
+            
+            try {
+                const response = await fetch('@Url.Action("GenerateSteps", "Camera")', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ question: question })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    const stepsContent = document.getElementById('steps-content');
+                    stepsContent.innerHTML = data.steps.replace(/\n/g, '<br>');
+                    document.getElementById('steps-section').classList.remove('hidden');
+                }
+            } catch (err) {
+                alert('Error generating steps: ' + err.message);
+            }
+        }
+
+        function saveToHistory() {
+            alert('Saved to history! (Feature in development)');
+            window.location.href = '@Url.Action("Index", "History")';
+        }
+
+        // Initialize Lucide icons
+        lucide.createIcons();
+    </script>
+}

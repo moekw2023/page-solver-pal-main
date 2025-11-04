@@ -17,11 +17,11 @@
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "d:\\Sources\\Ideas\\AiDemo-StudentHelper\\page-solver-pal-main\\page-solver-pal-main\\StudentHelper.NET\\StudentHelper.Core\\StudentHelper.Core.csproj",
+      "projectUniqueName": "D:\\Sources\\Ideas\\AiDemo-StudentHelper\\page-solver-pal-main\\page-solver-pal-main\\StudentHelper.NET\\StudentHelper.Core\\StudentHelper.Core.csproj",
       "projectName": "StudentHelper.Core",
-      "projectPath": "d:\\Sources\\Ideas\\AiDemo-StudentHelper\\page-solver-pal-main\\page-solver-pal-main\\StudentHelper.NET\\StudentHelper.Core\\StudentHelper.Core.csproj",
+      "projectPath": "D:\\Sources\\Ideas\\AiDemo-StudentHelper\\page-solver-pal-main\\page-solver-pal-main\\StudentHelper.NET\\StudentHelper.Core\\StudentHelper.Core.csproj",
       "packagesPath": "C:\\Users\\Administrator\\.nuget\\packages\\",
-      "outputPath": "d:\\Sources\\Ideas\\AiDemo-StudentHelper\\page-solver-pal-main\\page-solver-pal-main\\StudentHelper.NET\\StudentHelper.Core\\obj\\",
+      "outputPath": "D:\\Sources\\Ideas\\AiDemo-StudentHelper\\page-solver-pal-main\\page-solver-pal-main\\StudentHelper.NET\\StudentHelper.Core\\obj\\",
       "projectStyle": "PackageReference",
       "fallbackFolders": [
         "C:\\Program Files\\DevExpress 23.2\\Components\\Offline Packages",

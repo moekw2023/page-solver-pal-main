@@ -33,11 +33,7 @@ builder.Services.AddHttpClient<IAIService, AIService>();
 builder.Services.AddScoped<IAIService, AIService>();
 builder.Services.AddScoped<IUserService, UserService>();
 
-// Add localization support
-builder.Services.AddLocalization(options => options.ResourcesPath = "Resources");
-builder.Services.AddControllersWithViews()
-    .AddViewLocalization()
-    .AddDataAnnotationsLocalization();
+// Simple session-based language support (no extra packages needed)
 
 var app = builder.Build();
 

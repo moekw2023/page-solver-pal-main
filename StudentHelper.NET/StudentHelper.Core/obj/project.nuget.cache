@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "hK6xaE6G2zU=",
+  "dgSpecHash": "JEZ90+1NN5w=",
   "success": true,
-  "projectFilePath": "d:\\Sources\\Ideas\\AiDemo-StudentHelper\\page-solver-pal-main\\page-solver-pal-main\\StudentHelper.NET\\StudentHelper.Core\\StudentHelper.Core.csproj",
+  "projectFilePath": "D:\\Sources\\Ideas\\AiDemo-StudentHelper\\page-solver-pal-main\\page-solver-pal-main\\StudentHelper.NET\\StudentHelper.Core\\StudentHelper.Core.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\Administrator\\.nuget\\packages\\microsoft.netcore.app.ref\\8.0.18\\microsoft.netcore.app.ref.8.0.18.nupkg.sha512",
     "C:\\Users\\Administrator\\.nuget\\packages\\microsoft.windowsdesktop.app.ref\\8.0.18\\microsoft.windowsdesktop.app.ref.8.0.18.nupkg.sha512",

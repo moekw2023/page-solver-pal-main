@@ -1,0 +1,196 @@
+@model dynamic
+@{
+    ViewData["Title"] = "History";
+    var language = Context.Session.GetString("Language") ?? "ar";
+    var isArabic = language == "ar";
+    var isRTL = isArabic;
+}
+
+<!DOCTYPE html>
+<html lang="@language" dir="@(isRTL ? "rtl" : "ltr")">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>@ViewData["Title"] - StudentHelper</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: @(isArabic ? "'Cairo', sans-serif" : "'Inter', sans-serif");
+        }
+        .slide-in {
+            animation: slideIn 0.5s ease-out;
+        }
+        @@keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-purple-50 via-indigo-50 to-blue-50 min-h-screen">
+    <!-- Header -->
+    <div class="bg-white shadow-lg">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center py-6">
+                <div class="flex items-center">
+                    <a href="/" class="flex items-center">
+                        <i class="fas fa-graduation-cap text-4xl text-indigo-600 @(isRTL ? "ml-3" : "mr-3")"></i>
+                        <h1 class="text-3xl font-bold bg-gradient-to-r from-purple-600 to-indigo-600 bg-clip-text text-transparent">
+                            StudentHelper
+                        </h1>
+                    </a>
+                </div>
+                <button onclick="toggleLanguage()" class="flex items-center space-x-2 px-4 py-2 bg-indigo-100 hover:bg-indigo-200 rounded-lg transition-all duration-300">
+                    <i class="fas fa-language text-indigo-600"></i>
+                    <span class="text-indigo-700 font-semibold">@(isArabic ? "English" : "العربية")</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <!-- Page Header -->
+        <div class="mb-8 slide-in">
+            <h2 class="text-4xl font-bold text-gray-900 mb-2">
+                @(isArabic ? "📚 سجل المسائل المحلولة" : "📚 Problem History")
+            </h2>
+            <p class="text-gray-600 text-lg">
+                @(isArabic ? "راجع جميع المسائل التي قمت بحلها مع الذكاء الاصطناعي" : "Review all problems you've solved with AI")
+            </p>
+        </div>
+
+        <!-- Stats Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8 slide-in">
+            <div class="bg-white rounded-xl shadow-lg p-6 border-t-4 border-purple-500">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-gray-600 text-sm mb-1">@(isArabic ? "إجمالي المسائل" : "Total Problems")</p>
+                        <p class="text-3xl font-bold text-purple-600" id="totalProblems">@ViewBag.TotalCount</p>
+                    </div>
+                    <i class="fas fa-calculator text-4xl text-purple-200"></i>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-xl shadow-lg p-6 border-t-4 border-green-500">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-gray-600 text-sm mb-1">@(isArabic ? "المسائل الصحيحة" : "Correct Solutions")</p>
+                        <p class="text-3xl font-bold text-green-600" id="correctProblems">@ViewBag.CorrectCount</p>
+                    </div>
+                    <i class="fas fa-check-circle text-4xl text-green-200"></i>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-xl shadow-lg p-6 border-t-4 border-indigo-500">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-gray-600 text-sm mb-1">@(isArabic ? "معدل النجاح" : "Success Rate")</p>
+                        <p class="text-3xl font-bold text-indigo-600" id="successRate">
+                            @(ViewBag.TotalCount > 0 ? Math.Round((double)ViewBag.CorrectCount / ViewBag.TotalCount * 100, 1) : 0)%
+                        </p>
+                    </div>
+                    <i class="fas fa-chart-line text-4xl text-indigo-200"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- History Items -->
+        <div class="bg-white rounded-xl shadow-lg p-8 slide-in">
+            @if (ViewBag.Items != null && ViewBag.Items.Count > 0)
+            {
+                <div class="space-y-4">
+                    @foreach (var item in ViewBag.Items)
+                    {
+                        <div class="border border-gray-200 rounded-lg p-6 hover:shadow-md transition-shadow duration-300">
+                            <div class="flex items-start justify-between mb-4">
+                                <div class="flex-1">
+                                    <div class="flex items-center mb-2">
+                                        <span class="px-3 py-1 bg-indigo-100 text-indigo-700 rounded-full text-sm font-semibold @(isRTL ? "ml-3" : "mr-3")">
+                                            @item.Subject
+                                        </span>
+                                        <span class="px-3 py-1 @(item.IsCorrect ? "bg-green-100 text-green-700" : "bg-yellow-100 text-yellow-700") rounded-full text-sm font-semibold">
+                                            @(item.IsCorrect ? (isArabic ? "✓ صحيح" : "✓ Correct") : (isArabic ? "⚠ للمراجعة" : "⚠ Review"))
+                                        </span>
+                                    </div>
+                                    <h3 class="text-lg font-semibold text-gray-900 mb-2">@item.Question</h3>
+                                    <p class="text-gray-600 text-sm">
+                                        <i class="fas fa-clock @(isRTL ? "ml-2" : "mr-2")"></i>
+                                        @item.CreatedAt.ToString("yyyy-MM-dd HH:mm")
+                                    </p>
+                                </div>
+                                @if (!string.IsNullOrEmpty(item.ImageUrl))
+                                {
+                                    <img src="@item.ImageUrl" alt="Problem" class="w-24 h-24 object-cover rounded-lg @(isRTL ? "mr-4" : "ml-4")">
+                                }
+                            </div>
+                            
+                            <div class="bg-gray-50 rounded-lg p-4 mt-4">
+                                <h4 class="font-semibold text-gray-900 mb-2">
+                                    @(isArabic ? "الحل:" : "Solution:")
+                                </h4>
+                                <div class="text-gray-700 whitespace-pre-wrap">@item.Answer</div>
+                            </div>
+                        </div>
+                    }
+                </div>
+
+                <!-- Pagination -->
+                @if (ViewBag.TotalPages > 1)
+                {
+                    <div class="flex justify-center items-center space-x-2 mt-8">
+                        @for (int i = 1; i <= ViewBag.TotalPages; i++)
+                        {
+                            <a href="/History?page=@i" 
+                               class="px-4 py-2 @(i == ViewBag.CurrentPage ? "bg-indigo-600 text-white" : "bg-gray-200 text-gray-700 hover:bg-gray-300") rounded-lg transition-colors duration-300">
+                                @i
+                            </a>
+                        }
+                    </div>
+                }
+            }
+            else
+            {
+                <div class="text-center py-12">
+                    <i class="fas fa-inbox text-6xl text-gray-300 mb-4"></i>
+                    <h3 class="text-2xl font-semibold text-gray-700 mb-2">
+                        @(isArabic ? "لا توجد مسائل محلولة بعد" : "No solved problems yet")
+                    </h3>
+                    <p class="text-gray-500 mb-6">
+                        @(isArabic ? "ابدأ بحل أول مسألة لك باستخدام الذكاء الاصطناعي" : "Start solving your first problem with AI")
+                    </p>
+                    <a href="/Camera" class="inline-flex items-center px-6 py-3 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-xl hover:from-purple-700 hover:to-indigo-700 transition-all duration-300 shadow-lg">
+                        <i class="fas fa-camera @(isRTL ? "ml-2" : "mr-2")"></i>
+                        @(isArabic ? "حل مسألة جديدة" : "Solve New Problem")
+                    </a>
+                </div>
+            }
+        </div>
+    </div>
+
+    <script>
+        const isArabic = '@language' === 'ar';
+        const isRTL = isArabic;
+
+        function toggleLanguage() {
+            const newLang = isArabic ? 'en' : 'ar';
+            fetch('/Camera/SetLanguage', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ language: newLang })
+            }).then(() => {
+                window.location.reload();
+            });
+        }
+    </script>
+</body>
+</html>
